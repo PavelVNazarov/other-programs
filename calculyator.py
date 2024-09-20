@@ -14,6 +14,9 @@ action = '+'
 entry_text = StringVar()
 Entry(window, width=40, textvariable=entry_text).grid(row=0, column=0, columnspan=4)
 
+# Запрет на изменение размеров окна
+window.resizable(False, False)
+
 def add_digit(digit):
     global number
     number = number * 10 + digit
