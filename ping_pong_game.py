@@ -5,10 +5,11 @@
 import pygame
 from pygame.transform import scale
 from random import randint
+from time import sleep
 
-# создаем Астероид, расширяющий класс Спрайт
+speed = 0.005
 
-    # конструктор, в который передаются стартовые координаты
+# конструктор, в который передаются стартовые координаты
 class Ball(pygame.sprite.Sprite):
     def __init__(self,x,y):
         pygame.sprite.Sprite.__init__(self)
@@ -32,7 +33,10 @@ class Ball(pygame.sprite.Sprite):
             self.kill()
         if self.rect.y <= 0:
             self.change_y = 0.5
-
+            
+        global speed
+        sleep(speed)
+        
         self.rect.x = self.rect.x + self.change_x
         self.rect.y = self.rect.y + self.change_y
 
@@ -68,14 +72,15 @@ screen = pygame.display.set_mode((800, 600))
 pygame.display.set_caption("Ping-Pong")
 
 sky = scale(pygame.image.load("pong_table.png"), (800, 600))
-# создаем корабль в точке 400 400
+
+# создаем ракетку в точке 340 580
 ship = Spaceship(340, 580)
 
 # заведем переменные, чтобы помнить, какие клавиши нажаты
 left = False
 right = False
 
-# создаем астероид
+# создаем шарик
 ball = Ball(randint(5, 700), 5)
 
 while True:
@@ -99,12 +104,12 @@ while True:
     # рисуем небо
     screen.blit(sky, (0, 0))
 
-    # перемещаем корабль
+    # перемещаем ракетку
     ship.update(left, right)
     # просим корабль нарисоваться
     ship.draw(screen)
 
-    # не астероид а шарик
+    # шарик
 
     ball.update()
     ball.draw(screen)
