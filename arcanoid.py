@@ -1,3 +1,7 @@
+# Игры на библиотеке PyGame
+# Назаров ПВ
+# arcanoid.py
+
 import pygame
 from pygame.transform import scale
 from random import randint
@@ -56,7 +60,6 @@ class Spaceship(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
         self.rect = pygame.Rect(x, y, 120, 20)
-        self.image = scale(pygame.image.load("Bar.png"), (120, 20))
         self.color = (255, 0, 0)  # Цвет щита (красный)
 
     def draw(self, screen):
@@ -77,7 +80,6 @@ class Spaceship(pygame.sprite.Sprite):
 # Главная игра
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Arkanoid")
-sky = scale(pygame.image.load("arcanoid_table.png"), (800, 600))
 
 ship = Spaceship(340, 580)
 ball = Ball(400, 565)
@@ -116,14 +118,6 @@ while True:
             if e.key == pygame.K_e:  # Закончить игру
                 pygame.quit()
                 exit()
-        if e.type == pygame.KEYUP:
-            if e.key == pygame.K_LEFT:
-                left = False
-            if e.key == pygame.K_RIGHT:
-                right = False
-        if e.type == pygame.QUIT:
-            pygame.quit()
-            exit()
 
     screen.fill((0, 0, 0))  # Заливка фона
     ship.update(left, right)
@@ -135,8 +129,5 @@ while True:
     blocks.update()
     blocks.draw(screen)
 
-    if ball.rect.y >= screen_height:
-        ball = Ball(400, 565)  # Перезапуск мяча
-
-    pygame.display.update()
-    clock.tick(60)  # Частота кадров
+    pygame.display.flip()
+    clock.tick(60)  # Ограничение FPS
