@@ -8,13 +8,13 @@ from random import randint
 
 # Скорость мяча
 speed = 5
-
+speed_bar = 5
 
 class Ball(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.rect = pygame.Rect(x, y, 50, 50)
-        self.image = scale(pygame.image.load('Ball_2.png'), (50, 50))
+        self.rect = pygame.Rect(x, y, 40, 40)
+        self.image = scale(pygame.image.load('Ball_2.png'), (40, 40))
         self.change_x = speed
         self.change_y = speed
         self.active = True  # Новое поле для отслеживания статуса мяча
@@ -29,7 +29,7 @@ class Ball(pygame.sprite.Sprite):
         if self.rect.x >= 750 or self.rect.x <= 0:
             self.change_x *= -1  # Флип по горизонтали
         if self.rect.y >= 600:
-            self.active = False  # Мяч пропал
+            self.active = False  # Мяч пропалself.kill()
         if self.rect.y <= 0:
             self.change_y *= -1  # Флип по вертикали
 
@@ -49,9 +49,9 @@ class Spaceship(pygame.sprite.Sprite):
 
     def update(self, left, right):
         if left:
-            self.xvel = -speed  # Фиксированная скорость движения
+            self.xvel = -speed_bar  # Фиксированная скорость движения
         elif right:
-            self.xvel = speed
+            self.xvel = speed_bar
         else:
             self.xvel = 0
 
@@ -97,13 +97,23 @@ while True:
                 left = True
             if e.key == pygame.K_RIGHT:
                 right = True
+            if e.key == pygame.K_q:  # Увеличить скорость
+                if speed < 10:
+                    speed += 1
+                else:
+                    speed = 10
+            if e.key == pygame.K_s:  # Убавить скорось
+                if speed > 2:
+                    speed -= 1
+                else:
+                    speed = 1
             if e.key == pygame.K_r:  # Начать сначала
                 reset_game()
             if e.key == pygame.K_n:  # Новая подача
-                if not ball.active:
+                if ball.active == None:
                     ball = Ball(ship.rect.x + 50, ship.rect.y - 50)
                     ball.active = True
-            if e.key == pygame.K_q:  # Закончить игру
+            if e.key == pygame.K_e:  # Закончить игру
                 pygame.quit()
                 exit()
         if e.type == pygame.KEYUP:
@@ -120,8 +130,9 @@ while True:
     ship.draw(screen)
 
     ball.update()
-    if not ball.active:  # Если мяч пропал
+    if ball.active == False:  # Если мяч пропал
         score += 1  # Увеличиваем счет
+        ball.active = None
     ball.draw(screen)
 
     # Вывод счета на экран
