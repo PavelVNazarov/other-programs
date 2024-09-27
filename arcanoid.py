@@ -8,18 +8,18 @@ from random import randint
 from time import sleep
 
 speed = 0.005
-    # конструктор, в который передаются стартовые координаты
+
 class Ball(pygame.sprite.Sprite):
-    def __init__(self,x,y):
+    def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
         self.rect = pygame.Rect(x, y, 15, 15)
-        self.image = scale(pygame.image.load('Ball_2.png'), (15, 15))
-
         self.change_x = 1
         self.change_y = 1
+        self.color = (255, 255, 0)  # Цвет шара (жёлтый)
 
     def draw(self, screen):
-        screen.blit(self.image, (self.rect.x, self.rect.y))
+        # Рисуем круг вместо спрайта
+        pygame.draw.circle(screen, self.color, (self.rect.x + 7, self.rect.y + 7), 7)  # +7 для центра круга
 
     def update(self):
         if self.rect.x >= 785:
@@ -27,15 +27,12 @@ class Ball(pygame.sprite.Sprite):
         if self.rect.x <= 0:
             self.change_x = 1
         if self.rect.y >= 600:
-            self.kill()
+            self.kill()  # Если мяч упал, удаляем его
         if self.rect.y <= 0:
             self.change_y = 1
 
-        global speed
-        #sleep(speed)
-
-        self.rect.x = self.rect.x + self.change_x
-        self.rect.y = self.rect.y + self.change_y
+        self.rect.x += self.change_x
+        self.rect.y += self.change_y
 
 class Block(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -109,40 +106,60 @@ else:
 block = Block(100,100)
 #block2 = Block(400,100)
 
+clock = pygame.time.Clock()
+
+font = pygame.font.Font(None, 36)
+
 while True:
-
     for e in pygame.event.get():
-        # если нажата клавиша - меняем переменную
-        if e.type == pygame.KEYDOWN and e.key == pygame.K_LEFT:
-            left = True
-        if e.type == pygame.KEYDOWN and e.key == pygame.K_RIGHT:
-            right = True
-
-        # если отпущена клавиша - меняем переменную
-        if e.type == pygame.KEYUP and e.key == pygame.K_LEFT:
-           left = False
-        if e.type == pygame.KEYUP and e.key == pygame.K_RIGHT:
-           right = False
-
+        if e.type == pygame.KEYDOWN:
+            if e.key == pygame.K_LEFT:
+                left = True
+            if e.key == pygame.K_RIGHT:
+                right = True
+            if e.key == pygame.K_q:  # Увеличить скорость
+                if speed < 10:
+                    speed += 1
+                else:
+                    speed = 10
+            if e.key == pygame.K_s:  # Убавить скорось
+                if speed > 2:
+                    speed -= 1
+                else:
+                    speed = 1
+            if e.key == pygame.K_r:  # Начать сначала
+                reset_game()
+            if e.key == pygame.K_n:  # Новая подача
+                if ball.active == None:
+                    ball = Ball(ship.rect.x + 50, ship.rect.y - 50)
+                    ball.active = True
+            if e.key == pygame.K_e:  # Закончить игру
+                pygame.quit()
+                exit()
+        if e.type == pygame.KEYUP:
+            if e.key == pygame.K_LEFT:
+                left = False
+            if e.key == pygame.K_RIGHT:
+                right = False
         if e.type == pygame.QUIT:
-            raise SystemExit("QUIT")
+            pygame.quit()
+            exit()
 
-    # рисуем небо
     screen.blit(sky, (0, 0))
-
-    # перемещаем
     ship.update(left, right)
-    # просим  нарисоваться
     ship.draw(screen)
 
-    # шарик
-
     ball.update()
+    if ball.active == False:  # Если мяч пропал
+        score += 1  # Увеличиваем счет
+        ball.active = None
     ball.draw(screen)
 
-    if block.life > 0:
-        block.update()
-        block.draw(screen)
-    #block2.draw(screen)
+    # Вывод счета на экран
+    score_text = font.render(f"Пропущенные мячи: {score}", True, (255, 255, 255))
+    screen.blit(score_text, (10, 10))
+
+    pygame.display.update()
+    clock.tick(60)  # Ограничение до 60 кадров в секунду
 
     pygame.display.update()
