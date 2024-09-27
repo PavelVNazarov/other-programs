@@ -1,7 +1,3 @@
-# игры на библиотеке pygame
-# Назаров ПВ
-# arcanoid.py
-
 import pygame
 from pygame.transform import scale
 from random import randint
@@ -42,6 +38,7 @@ class Block(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
         self.rect = pygame.Rect(x, y, block_width, block_height)
+        self.image = scale(pygame.image.load("Bar.png"), (200, 40))
         self.color = (0, 255, 0)  # Цвет блока (зелёный)
         self.life = 1
 
@@ -59,6 +56,7 @@ class Spaceship(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
         self.rect = pygame.Rect(x, y, 120, 20)
+        self.image = scale(pygame.image.load("Bar.png"), (120, 20))
         self.color = (255, 0, 0)  # Цвет щита (красный)
 
     def draw(self, screen):
@@ -79,6 +77,7 @@ class Spaceship(pygame.sprite.Sprite):
 # Главная игра
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Arkanoid")
+sky = scale(pygame.image.load("arcanoid_table.png"), (800, 600))
 
 ship = Spaceship(340, 580)
 ball = Ball(400, 565)
@@ -93,19 +92,38 @@ right = False
 
 while True:
     for e in pygame.event.get():
-        if e.type == pygame.QUIT:
-            pygame.quit()
-            exit()
         if e.type == pygame.KEYDOWN:
             if e.key == pygame.K_LEFT:
                 left = True
             if e.key == pygame.K_RIGHT:
                 right = True
+            if e.key == pygame.K_q:  # Увеличить скорость
+                if speed < 10:
+                    speed += 1
+                else:
+                    speed = 10
+            if e.key == pygame.K_s:  # Убавить скорось
+                if speed > 2:
+                    speed -= 1
+                else:
+                    speed = 1
+            if e.key == pygame.K_r:  # Начать сначала
+                reset_game()
+            if e.key == pygame.K_n:  # Новая подача
+                if ball.active == None:
+                    ball = Ball(ship.rect.x + 50, ship.rect.y - 50)
+                    ball.active = True
+            if e.key == pygame.K_e:  # Закончить игру
+                pygame.quit()
+                exit()
         if e.type == pygame.KEYUP:
             if e.key == pygame.K_LEFT:
                 left = False
             if e.key == pygame.K_RIGHT:
                 right = False
+        if e.type == pygame.QUIT:
+            pygame.quit()
+            exit()
 
     screen.fill((0, 0, 0))  # Заливка фона
     ship.update(left, right)
