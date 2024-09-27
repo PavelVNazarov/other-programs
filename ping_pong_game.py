@@ -1,7 +1,3 @@
-# игры на библиотеке pygame
-# Назаров ПВ
-# pong_game.py
-
 import pygame
 from pygame.transform import scale
 from random import randint
@@ -13,28 +9,38 @@ speed_bar = 5
 class Ball(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.rect = pygame.Rect(x, y, 40, 40)
-        self.image = scale(pygame.image.load('Ball_2.png'), (40, 40))
         self.change_x = speed
         self.change_y = speed
-        self.active = True  # Новое поле для отслеживания статуса мяча
+        self.active = True
+        self.color = (255, 255, 255)  # Белый цвет для шарика
+
+        self.ball_radius = 20
+        self.ball_x = x
+        self.ball_y = y
+        self.rect = pygame.Rect(self.ball_x - self.ball_radius, self.ball_y - self.ball_radius,
+                                self.ball_radius * 2, self.ball_radius * 2)
 
     def draw(self, screen):
-        screen.blit(self.image, (self.rect.x, self.rect.y))
+        pygame.draw.circle(screen, self.color, (self.ball_x, self.ball_y), self.ball_radius)
 
     def update(self):
         if not self.active:
-            return  # Если мяч не активен, выходим
+            return
 
-        if self.rect.x >= 750 or self.rect.x <= 0:
-            self.change_x *= -1  # Флип по горизонтали
-        if self.rect.y >= 600:
-            self.active = False  # Мяч пропалself.kill()
-        if self.rect.y <= 0:
-            self.change_y *= -1  # Флип по вертикали
+        # Обновление координат
+        self.ball_x += self.change_x
+        self.ball_y += self.change_y
 
-        self.rect.x += self.change_x
-        self.rect.y += self.change_y
+        # Обновление rect
+        self.rect.x = self.ball_x - self.ball_radius
+        self.rect.y = self.ball_y - self.ball_radius
+
+        if self.ball_x >= 750 or self.ball_x <= 0:
+            self.change_x *= -1
+        if self.ball_y >= 600:
+            self.active = False
+        if self.ball_y <= 0:
+            self.change_y *= -1
 
 
 class Spaceship(pygame.sprite.Sprite):
