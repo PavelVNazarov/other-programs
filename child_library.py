@@ -45,7 +45,7 @@ class reader:
         self.school : str # школа
         self.books = [] # книги
         self.number : int # номер формуляра
-        
+
     def __str__(self):
         print(curent_reader.famili, curent_reader.name, curent_reader.surname, curent_reader.school, curent_reader.class_num, curent_reader.number)
 
@@ -56,11 +56,13 @@ class reader:
         self.school = input('Школа: ')
         self.class_num = input('Класс: ')
         self.number = input('Номер формуляра: ')
-        reader_new = reader(self)
+        reader_new = reader()
         Lib_readers.append(reader_new)
+        global curent_reader
         curent_reader = reader_new
 
     def reader_form_read(self):
+        global curent_reader
         if curent_reader == None:
             print('Сначала откройте формуляр читателя!')
             self.famili = input('Фамилия: ')
@@ -69,27 +71,63 @@ class reader:
             self.school = input('Школа: ')
             self.class_num = input('Класс: ')
             self.number = input('Номер формуляра: ')
-            reader_new = reader(self)
+            reader_new = reader()
             curent_reader = reader_new
             start_prog()
         else:
             print(curent_reader)
-        
-    
+
+
     def reader_book_write(self):
+        global curent_reader
         if curent_reader == None:
             print('Сначала откройте формуляр читателя!')
             reader.reader_form_read()
-    
+        else:
+            print(curent_reader)
+
     def reader_book_return(self):
+        global curent_reader
         if curent_reader == None:
             print('Сначала откройте формуляр читателя!')
             reader.reader_form_read()
-    
+        else:
+            print(curent_reader)
+
     def reader_form_write(self):
+        global curent_reader
         if curent_reader == None:
             print('Сначала откройте формуляр читателя!')
             reader.reader_form_read()
+        else:
+            #global curent_reader
+            new_famili = input(f'Фамилия: {curent_reader.famili} ?')
+            if self.famili != '':
+                self.famili = new_famili
+
+            new_name = input(f'Имя: {curent_reader.name} ?')
+            if self.name != '':
+                self.name = new_name
+
+            new_surname = input(f'Отчество: {curent_reader.surname} ?')
+            if self.surname != '':
+                self.surname = new_surname
+
+            new_school = input(f'Школа: {curent_reader.school} ?')
+            if self.school != '':
+                self.school = new_school
+
+            new_class_num = input(f'Класс: {curent_reader.class_num} ?')
+            if self.class_num  != '':
+                self.class_num  = new_class_num
+
+            new_number = input(f'Номер формуляра: {curent_reader.number} ?')
+            if self.number != '':
+                self.number = new_number
+
+            reader_new = reader()
+            #Lib_readers.append(reader_new)
+            curent_reader = reader_new
 
 def start_prog():
 
