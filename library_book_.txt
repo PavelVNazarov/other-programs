@@ -1,6 +1,6 @@
 import pickle
 
-Lib_file_name = 'child_library_books.pkl'
+Lib_file_name = 'child_library_books'
 Lib_books = []  # список всех книг библиотеки - каталог
 
 class Book:
@@ -12,6 +12,7 @@ class Book:
         self.publication = publication  # год издания
         self.publishing = publishing  # издательство
 
+    @staticmethod
     def new_book():
         autor = input('Автор книги (авторы): ')
         name = input('Название: ')
@@ -21,46 +22,50 @@ class Book:
         annot = input('Аннотация: ')
         book_new = Book(autor, name, annot, number, publication, publishing)
         Lib_books.append(book_new)
-        save_books()  # Сохраняем изменения после добавления новой книги
 
-def save_books():
-    with open(Lib_file_name, 'wb') as f:
-        pickle.dump(Lib_books, f)
+    @staticmethod
+    def save_books():
+        with open(Lib_file_name, 'wb') as file:
+            pickle.dump(Lib_books, file)
 
-def load_books():
-    try:
-        with open(Lib_file_name, 'rb') as f:
-            return pickle.load(f)
-    except (FileNotFoundError, EOFError):
-        return []
+    @staticmethod
+    def load_books():
+        try:
+            with open(Lib_file_name, 'rb') as file:
+                return pickle.load(file)
+        except (FileNotFoundError, EOFError):
+            return []
 
-def print_books():
-    for idx, book in enumerate(Lib_books):
-        print(f"{idx + 1}: {book.name} (Автор: {book.autor}, Год: {book.publication})")
-
-def compare_books(new_book):
-    for book in Lib_books:
-        if book.name == new_book.name and book.autor == new_book.autor:
-            return True
-    return False
+    @staticmethod
+    def print_books():
+        for book in Lib_books:
+            print(f"Автор: {book.autor}, Название: {book.name}, Аннотация: {book.annot}, Номер: {book.number}, Год: {book.publication}, Издательство: {book.publishing}")
 
 def start_prog():
     global Lib_books
-    Lib_books = load_books()  # Загружаем книги из файла
+    Lib_books = Book.load_books()
 
-    print('Вас приветствует детская библиотека!')
-    print()
-    print('1 - новая книга')
-    print('2 - показать все книги')
+    while True:
+        print('Вас приветствует детская библиотека!')
+        print('1 - новая книга')
+        print('2 - посмотреть все книги')
+        print('0 - выход')
 
-    act_num = input('? ')
-    if act_num == '1':
-        Book.new_book()
-    elif act_num == '2':
-        print_books()
+        act_num = input('? ')
+        if act_num == '1':
+            Book.new_book()
+            Book.save_books()
+        elif act_num == '2':
+            Book.print_books()
+        elif act_num == '0':
+            print('Выход из программы.')
+            break
+        else:
+            print('Некорректный ввод, попробуйте еще раз.')
 
 start_prog()
-Пояснения:
-Сохранение и загрузка книг: Методы save_books и load_books используют библиотеку pickle для записи и чтения списка книг в файл.
-Печать всех книг: Метод print_books выводит на экран все книги из библиотеки.
-Сравнение книг: Метод compare_books проверяет, есть ли уже книга с таким же названием и автором в списке.
+Изменения:
+Методы save_books и load_books: добавлены для сохранения и загрузки списка книг из файла с помощью pickle.
+Метод print_books: выводит все книги из каталога.
+Основной цикл в start_prog: теперь пользователю предоставляется возможность вернуться к главному меню или выйти из программы.
+Теперь, после того как Вы добавили новую книгу или посмотрели все книги, программа вернётся в главное меню, и Вы сможете продолжать работу или выйти.
