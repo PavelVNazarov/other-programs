@@ -1,86 +1,94 @@
-# Детская библиотека
-# Назаров ПВ
-# работа в консоле, просто файл
+import sqlite3
 
-import pickle  # Для работы с файлами
+# Создаем или открываем базу данных
+conn = sqlite3.connect('library.db')
+cursor = conn.cursor()
+
+# Создаем таблицы, если они еще не существуют
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS books (
+    id INTEGER PRIMARY KEY,
+    autor TEXT,
+    name TEXT,
+    annot TEXT,
+    number TEXT,
+    publication INTEGER,
+    publishing TEXT
+)
+''')
+
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS readers (
+    id INTEGER PRIMARY KEY,
+    surname TEXT,
+    name TEXT,
+    famili TEXT,
+    class_num TEXT,
+    school TEXT,
+    number TEXT
+)
+''')
 
 Lib_books = []  # список всех книг библиотеки - каталог
-Lib_readers = []  # список всех читателей
+Lib_readers = []  # список читателей
 
 class Book:
-    def __init__(self, autor=' ', name=' ', annot=' ', number=' ', publication=2000, publishing=' '):
-        self.name = name  # название
-        self.autor = autor  # автор
-        self.annot = annot  # аннотация
-        self.number = number  # номер в каталоге
-        self.publication = publication  # год издания
-        self.publishing = publishing  # издательство
+    def __init__(self, autor='', name='', annot='', number='', publication=2000, publishing=''):
+        self.name = name
+        self.autor = autor
+        self.annot = annot
+        self.number = number
+        self.publication = publication
+        self.publishing = publishing
 
-    def new_book(self):
-        autor = input('Автор книги (авторы): ')
+    @staticmethod
+    def new_book():
+        autor = input('Автор книги: ')
         name = input('Название: ')
         number = input('Номер в библиотечном каталоге: ')
         publishing = input('Издательство: ')
         publication = int(input('Год издания: '))
         annot = input('Аннотация: ')
-        book_new = Book(autor, name, annot, number, publication, publishing)
-        Lib_books.append(book_new)
-        self.save_books()
-
-    @staticmethod
-    def save_books():
-        with open('books.pkl', 'wb') as f:
-            pickle.dump(Lib_books, f)
-
-    @staticmethod
-    def load_books():
-        global Lib_books
-        try:
-            with open('books.pkl', 'rb') as f:
-                Lib_books = pickle.load(f)
-        except FileNotFoundError:
-            pass
+        
+        cursor.execute('INSERT INTO books (autor, name, annot, number, publication, publishing) VALUES (?, ?, ?, ?, ?, ?)',
+                       (autor, name, annot, number, publication, publishing))
+        conn.commit()
+        print("Книга добавлена!")
 
 class Reader:
-    curent_reader = None 
-    
-    def __init__(self, surname=' ', name=' ', famili=' ', number=0, class_num=' ', school=' '):
-        self.name = name  # имя
-        self.surname = surname  # отчество
-        self.famili = famili  # фамилия
-        self.class_num = class_num  # класс
-        self.school = school  # школа
-        self.number = number  # номер формуляра
-        self.books = []  # книги
+    current_reader = None
 
-    def new_reader(self):
+    def __init__(self, surname='', name='', famili='', number='', class_num='', school=''):
+        self.name = name
+        self.surname = surname
+        self.famili = famili
+        self.class_num = class_num
+        self.school = school
+        self.number = number
+
+    @staticmethod
+    def new_reader():
         famili = input('Фамилия: ')
         name = input('Имя: ')
         surname = input('Отчество: ')
         school = input('Школа: ')
         class_num = input('Класс: ')
         number = input('Номер формуляра: ')
-        Reader.curent_reader = Reader(famili, name, surname, school, class_num, number)
-        Lib_readers.append(Reader.curent_reader)
+        
+        Reader.current_reader = Reader(famili, name, surname, school, class_num, number)
+        cursor.execute('INSERT INTO readers (surname, name, famili, class_num, school, number) VALUES (?, ?, ?, ?, ?, ?)',
+                       (famili, name, surname, class_num, school, number))
+        conn.commit()
+        print("Читатель зарегистрирован!")
 
     @staticmethod
-    def save_readers():
-        with open('readers.pkl', 'wb') as f:
-            pickle.dump(Lib_readers, f)
-
-    @staticmethod
-    def load_readers():
-        global Lib_readers
-        try:
-            with open('readers.pkl', 'rb') as f:
-                Lib_readers = pickle.load(f)
-        except FileNotFoundError:
-            pass
+    def display_reader_form():
+        if Reader.current_reader is None:
+            print("Формуляр читателя отсутствует.")
+        else:
+            print(f'Фамилия: {Reader.current_reader.famili}, Имя: {Reader.current_reader.name}, Отчество: {Reader.current_reader.surname}, Школа: {Reader.current_reader.school}, Класс: {Reader.current_reader.class_num}, Номер формуляра: {Reader.current_reader.number}')
 
 def start_prog():
-    Book.load_books()
-    Reader.load_readers()
-
     while True:
         print('\nВас приветствует детская библиотека!')
         print('1 - новая книга')
@@ -89,22 +97,153 @@ def start_prog():
         print('4 - вписать книгу в формуляр')
         print('5 - отметить возврат книги')
         print('6 - изменить данные в формуляре')
-        print('0 - выйти из программы')
+        print('0 - выход')
 
         act_num = input('? ')
         if act_num == '1':
-            b = Book()
-            b.new_book()
+            Book.new_book()
         elif act_num == '2':
-            r = Reader()
-            r.new_reader()
-            Reader.save_readers()
+            Reader.new_reader()
+        elif act_num == '3':
+            Reader.display_reader_form()
         elif act_num == '0':
-            print('Выход из программы...')
+            print("Завершение работы программы.")
             break
+        else:
+            print("Неверный ввод, попробуйте снова.")
 
 start_prog()
-Особенности:
-Сохранение и загрузка: Мы используем модуль pickle для сохранения и загрузки книг и читателей. Это позволяет сохранять данные между запусками программы.
-Цикл: Программа запускает цикл, который позволяет пользователю выполнять действия до тех пор, пока он не решит выйти, выбрав 0.
-Упрощение подхода: методы для загрузки и сохранения данных выделены в статические методы для удобства.
+
+# Закрываем соединение с базой данных перед выходом
+conn.close()
+Основные изменения:
+Создание базы данных – использован SQLite для хранения данных о книгах и читателях.
+Функции работы с базой – добавлены функции для добавления книг и читателей.
+Цикл меню – программа будет запрашивать действия, пока пользователь не введет '0' для выхода.
+Постарайтесь протестировать и расширить функционал дальше, если потребуется. Если есть вопросы, спрашивайте!
+
+
+
+Ваше обращение №6370025
+добавить возможность посмотреть все книги в библиотеке.
+Добавить возможность посмотреть всех читателей библиотеки.
+добавить возможность посмотреть книги в формуляре читателя по группам: прочитаные и сданные , не сданы в библиотеку-на руках читателя.
+
+ИИ: Учим Python
+Давай объединим все эти функции в одну программу. Сначала необходимо создать базу данных SQLite для хранения книжной информации и информации о читателях. Ниже представлен упрощенный вариант реализации этого функционала:
+
+Python
+Копировать
+import sqlite3
+
+# Соединение с базой данных
+conn = sqlite3.connect('library.db')
+cursor = conn.cursor()
+
+# Создание таблиц
+cursor.execute('''CREATE TABLE IF NOT EXISTS books (
+                    id INTEGER PRIMARY KEY,
+                    author TEXT,
+                    name TEXT,
+                    annot TEXT,
+                    number TEXT,
+                    publication INTEGER,
+                    publishing TEXT)''')
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS readers (
+                    id INTEGER PRIMARY KEY,
+                    surname TEXT,
+                    name TEXT,
+                    patronymic TEXT,
+                    school TEXT,
+                    class_num TEXT,
+                    form_number TEXT)''')
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS reader_books (
+                    reader_id INTEGER,
+                    book_id INTEGER,
+                    status TEXT,
+                    FOREIGN KEY(reader_id) REFERENCES readers(id),
+                    FOREIGN KEY(book_id) REFERENCES books(id))''')
+
+# Функции для работы с книгами
+def add_book():
+    author = input('Автор книги: ')
+    name = input('Название: ')
+    number = input('Номер в библиотечном каталоге: ')
+    publishing = input('Издательство: ')
+    publication = int(input('Год издания: '))
+    annot = input('Аннотация: ')
+    
+    cursor.execute('''INSERT INTO books (author, name, annot, number, publication, publishing) VALUES (?, ?, ?, ?, ?, ?)''',
+                   (author, name, annot, number, publication, publishing))
+    conn.commit()
+    print('Книга добавлена!')
+
+def show_books():
+    cursor.execute('SELECT * FROM books')
+    books = cursor.fetchall()
+    for book in books:
+        print(book)
+
+# Функции для работы с читателями
+def add_reader():
+    surname = input('Фамилия: ')
+    name = input('Имя: ')
+    patronymic = input('Отчество: ')
+    school = input('Школа: ')
+    class_num = input('Класс: ')
+    form_number = input('Номер формуляра: ')
+    
+    cursor.execute('''INSERT INTO readers (surname, name, patronymic, school, class_num, form_number) VALUES (?, ?, ?, ?, ?, ?)''',
+                   (surname, name, patronymic, school, class_num, form_number))
+    conn.commit()
+    print('Читатель добавлен!')
+
+def show_readers():
+    cursor.execute('SELECT * FROM readers')
+    readers = cursor.fetchall()
+    for reader in readers:
+        print(reader)
+
+# Меню
+def start_program():
+    while True:
+        print('\nВас приветствует библиотека!')
+        print('1 - Добавить новую книгу')
+        print('2 - Посмотреть все книги')
+        print('3 - Добавить нового читателя')
+        print('4 - Посмотреть всех читателей')
+        print('5 - Выход')
+        
+        action = input('? ')
+        
+        if action == '1':
+            add_book()
+        elif action == '2':
+            show_books()
+        elif action == '3':
+            add_reader()
+        elif action == '4':
+            show_readers()
+        elif action == '5':
+            break
+        else:
+            print('Некорректный ввод, попробуйте снова.')
+
+start_program()
+
+# Закрытие соединения с базой данных
+conn.close()
+Объяснение кода:
+Создание базы данных: Мы создаем три таблицы: books, readers, и reader_books для хранения информации о книгах, читателях и связанной информации о прочитанных и сданных книгах.
+
+Функции для добавления книг и читателей: Эти функции добавляют новые записи в соответствующие таблицы.
+
+Функции для отображения всех книг и читателей: Эти функции извлекают и отображают все записи из таблиц.
+
+Меню: Реализовано простое меню, позволяющее пользователю выбирать действия.
+
+Выход из программы: Программа завершится, когда пользователь введет '5'.
+
+Это основание для твоей программы, и от него можно строить дальше, добавляя больше функций (например, связь книг с читателями, возможность просмотра статусов книг в формуляре и так далее). 
