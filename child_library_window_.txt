@@ -1,0 +1,78 @@
+графическая оболочка (окно с кнопками) дляя детской библиотеки
+import tkinter as tk
+from tkinter import messagebox
+import sqlite3
+
+# Настройка базы данных
+def setup_db():
+    conn = sqlite3.connect('library.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS books (
+                      id INTEGER PRIMARY KEY,
+                      autor TEXT,
+                      name TEXT,
+                      annot TEXT,
+                      number TEXT,
+                      publication INTEGER,
+                      publishing TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS readers (
+                      id INTEGER PRIMARY KEY,
+                      surname TEXT,
+                      name TEXT,
+                      famili TEXT,
+                      number TEXT,
+                      class_num TEXT,
+                      school TEXT)''')
+    conn.commit()
+    conn.close()
+
+# Создание приложения
+class LibraryApp:
+    def __init__(self, root):
+        self.root = root
+        root.title("Библиотека")
+
+        # Кнопки для управления приложением
+        self.add_book_button = tk.Button(root, text="Добавить новую книгу", command=self.add_book)
+        self.add_book_button.pack()
+
+        self.show_books_button = tk.Button(root, text="Посмотреть все книги", command=self.show_books)
+        self.show_books_button.pack()
+
+        self.add_reader_button = tk.Button(root, text="Добавить нового читателя", command=self.add_reader)
+        self.add_reader_button.pack()
+
+        self.show_readers_button = tk.Button(root, text="Посмотреть всех читателей", command=self.show_readers)
+        self.show_readers_button.pack()
+
+        self.exit_button = tk.Button(root, text="Выход", command=root.quit)
+        self.exit_button.pack()
+
+    def add_book(self):
+        # Здесь можно реализовать окно для добавления новой книги
+        messagebox.showinfo("Добавить книгу", "Функция добавления книги ещё не реализована.")
+
+    def show_books(self):
+        # Здесь можно реализовать окно для отображения всех книг
+        messagebox.showinfo("Все книги", "Функция просмотра книг ещё не реализована.")
+
+    def add_reader(self):
+        # Здесь можно реализовать окно для добавления нового читателя
+        messagebox.showinfo("Добавить читателя", "Функция добавления читателя ещё не реализована.")
+
+    def show_readers(self):
+        # Здесь можно реализовать окно для отображения всех читателей
+        messagebox.showinfo("Все читатели", "Функция просмотра читателей ещё не реализована.")
+
+if __name__ == "__main__":
+    setup_db()
+    root = tk.Tk()
+    app = LibraryApp(root)
+    root.mainloop()
+Как это работает:
+База данных: Метод setup_db создаёт базу данных и таблицы для книг и читателей, если они ещё не существуют.
+Интерфейс: В классе LibraryApp создаётся окно с кнопками для различных действий.
+Функции: Пока что кнопки просто вызывают messagebox, но Вы можете дополнить их нужной логикой (например, ввод данных и их сохранение в базу).
+Дальнейшие шаги:
+Вам нужно заполнить функции add_book, show_books, add_reader и show_readers подробной логикой.
+Также необходимо добавить окна для ввода данных с помощью tk.Entry и других элементов интерфейса.
