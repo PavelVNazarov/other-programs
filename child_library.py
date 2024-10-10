@@ -8,7 +8,7 @@ import os
 Lib_file_name = 'child_library'
 Lib_readers = [] # список всех читателей
 Lib_books = [] # список всех книг библиотеки - каталог
-curent_reader = None # чей формуляр открыт
+
 
 # 1 - новая книга
 # 2 - новый читатель
@@ -18,116 +18,138 @@ curent_reader = None # чей формуляр открыт
 # 6 - изменить данные в формуляре
 
 class book:
-    def __init__(self):
-        self.name : str # название
-        self.autor : str # автор
-        self.annot : str # аннотация
-        self.number : int # номер в каталоге
-        self.publication : int # год издания
-        self.publishing : str # издательство
+    def __init__(self, autor = ' ',
+                       name = ' ',
+                       annot = ' ',
+                       number = ' ',
+                       publication = 2000,
+                       publishing = ' '):
+        self.name = name # название
+        self.autor = autor # автор
+        self.annot = annot # аннотация
+        self.number = number # номер в каталоге
+        self.publication = publication # год издания
+        self.publishing = publishing # издательство
 
-    def new_book(self):
-        self.autor = input('Автор киги (авторы): ')
-        self.name = input('Название: ')
-        self.number = input('Номер в библиотечном каталоге: ')
-        self.publishig = input('Издательство: ')
-        self.publication = input('Год издания: ')
-        self.annot = input('Аннотация: ')
-        book_new = book(self)
+    def new_book():
+        autor = input('Автор киги (авторы): ')
+        name = input('Название: ')
+        number = input('Номер в библиотечном каталоге: ')
+        publishing = input('Издательство: ')
+        publication = int(input('Год издания: '))
+        annot = input('Аннотация: ')
+        book_new = book(autor, name, annot, number, publication, publishing)
         Lib_books.append(book_new)
-        
+
 class reader:
-    def __init__(self):
-        self.name : str # имя
-        self.surname : str # отчество
-        self.famili : str # фамилия
-        self.class_num : str # класс
-        self.school : str # школа
-        self.books = [] # книги
-        self.number : int # номер формуляра
+    curent_reader = None  # чей формуляр открыт
+
+    def __init__(self, surname = ' ',
+                       name = ' ',
+                       famili = ' ',
+                       number = 0,
+                       class_num = ' ',
+                       school = ' '):
+        self.name = name # имя
+        self.surname = surname # отчество
+        self.famili = famili # фамилия
+        self.class_num = class_num # класс
+        self.school = school # школа
+        self.number = number # номер формуляра
+        self.books = []  # книги
 
     def __str__(self):
-        print(curent_reader.famili, curent_reader.name, curent_reader.surname, curent_reader.school, curent_reader.class_num, curent_reader.number)
+        print(reader.curent_reader.famili,
+              reader.curent_reader.name,
+              reader.curent_reader.surname,
+              reader.curent_reader.school,
+              reader.curent_reader.class_num,
+              reader.curent_reader.number)
 
-    def new_reader(self):
-        self.famili = input('Фамилия: ')
-        self.name = input('Имя: ')
-        self.surname = input('Отчество: ')
-        self.school = input('Школа: ')
-        self.class_num = input('Класс: ')
-        self.number = input('Номер формуляра: ')
-        reader_new = reader()
-        Lib_readers.append(reader_new)
-        global curent_reader
-        curent_reader = reader_new
+    def new_reader():
+        famili = input('Фамилия: ')
+        name = input('Имя: ')
+        surname = input('Отчество: ')
+        school = int(input('Школа: '))
+        class_num = input('Класс: ')
+        number = input('Номер формуляра: ')
+        if input('Всё правильно, регистрируем? д - да / н - нет: ') == ('д' or 'Д'):
+            reader.curent_reader = reader(famili, name, surname, school, class_num, number)
+            Lib_readers.append(reader.curent_reader)
+            if input('Еще один читатель? д - да / н - нет: ') == ('д' or 'Д'):
+                reader.new_reader()
+            else:
+                start_prog()
+        else:
+            if input('Попробуем снова? д - да / н - нет: ') == ('д' or 'Д'):
+                reader.new_reader()
+            else:
+                start_prog()
 
-    def reader_form_read(self):
-        global curent_reader
-        if curent_reader == None:
-            print('Сначала откройте формуляр читателя!')
-            self.famili = input('Фамилия: ')
-            self.name = input('Имя: ')
-            self.surname = input('Отчество: ')
-            self.school = input('Школа: ')
-            self.class_num = input('Класс: ')
-            self.number = input('Номер формуляра: ')
-            reader_new = reader()
-            curent_reader = reader_new
+    def reader_form_read():
+        if reader.curent_reader == None:
+            print('Формуляр читателя!')
+            famili = input('Фамилия: ')
+            name = input('Имя: ')
+            surname = input('Отчество: ')
+            school = int(input('Школа: '))
+            class_num = input('Класс: ')
+            number = input('Номер формуляра: ')
+            reader_new = reader(famili, name, surname, school, class_num, number)
+            if reader.try_reader(reader_new):
+                reader.curent_reader = reader_new
             start_prog()
         else:
-            print(curent_reader)
+            print(reader.curent_reader)
 
+    def try_reader(self):
+        # проверка читателя через каталог читателей
+        return True
 
-    def reader_book_write(self):
-        global curent_reader
-        if curent_reader == None:
+    def reader_book_write():
+        if reader.curent_reader == None:
             print('Сначала откройте формуляр читателя!')
             reader.reader_form_read()
         else:
-            print(curent_reader)
+            print(reader.curent_reader)
 
-    def reader_book_return(self):
-        global curent_reader
-        if curent_reader == None:
+    def reader_book_return():
+        if reader.curent_reader == None:
             print('Сначала откройте формуляр читателя!')
             reader.reader_form_read()
         else:
-            print(curent_reader)
+            print(reader.curent_reader)
 
-    def reader_form_write(self):
-        global curent_reader
-        if curent_reader == None:
+    def reader_form_write():
+        if reader.curent_reader == None:
             print('Сначала откройте формуляр читателя!')
             reader.reader_form_read()
         else:
-            #global curent_reader
-            new_famili = input(f'Фамилия: {curent_reader.famili} ?')
-            if self.famili != '':
-                self.famili = new_famili
+            new_famili = input(f'Фамилия: {reader.curent_reader.famili} ?')
+            if new_famili != '':
+                reader.curent_reader.famili = new_famili
 
-            new_name = input(f'Имя: {curent_reader.name} ?')
-            if self.name != '':
-                self.name = new_name
+            new_name = input(f'Имя: {reader.curent_reader.name} ?')
+            if new_name != '':
+                reader.curent_reader.name = new_name
 
-            new_surname = input(f'Отчество: {curent_reader.surname} ?')
-            if self.surname != '':
-                self.surname = new_surname
+            new_surname = input(f'Отчество: {reader.curent_reader.surname} ?')
+            if new_surname != '':
+                reader.curent_reader.surname = new_surname
 
-            new_school = input(f'Школа: {curent_reader.school} ?')
-            if self.school != '':
-                self.school = new_school
+            new_school = input(f'Школа: {reader.curent_reader.school} ?')
+            if new_school != '':
+                reader.curent_reader.school = new_school
 
-            new_class_num = input(f'Класс: {curent_reader.class_num} ?')
-            if self.class_num  != '':
-                self.class_num  = new_class_num
+            new_class_num = input(f'Класс: {reader.curent_reader.class_num} ?')
+            if new_class_num  != '':
+                reader.curent_reader.class_num  = new_class_num
 
-            new_number = input(f'Номер формуляра: {curent_reader.number} ?')
-            if self.number != '':
-                self.number = new_number
+            new_number = input(f'Номер формуляра: {reader.curent_reader.number} ?')
+            if new_number != '':
+                reader.curent_reader.number = new_number
 
-            reader_new = reader()
-            #Lib_readers.append(reader_new)
-            curent_reader = reader_new
+            print(reader.curent_reader)
 
 def start_prog():
 
@@ -135,25 +157,26 @@ def start_prog():
     print()
     print('1 - новая книга')
     print('2 - новый читатель')
-    print('3 - посмотреть формуляр читателя')
-    print('4 - вписать книгу в формуляр')
-    print('5 - отметить возврат книги')
-    print('6 - изменить данные в формуляре')
-    act_num = input()
-        match act_num:
-        case 1:
-            book.new_book()
-        case 2:
-            reader.new_reader()
-        case 3:
-            reader.reader_form_read()
-        case 4:
-            reader.reader_book_write()
-        case 5:
-            reader.reader_book_return()
-        case 6:
-            reader.reader_form_write()
-
+    if reader.curent_reader != None:
+        print(reader.curent_reader)
+        print('3 - посмотреть формуляр читателя')
+        print('4 - вписать книгу в формуляр')
+        print('5 - отметить возврат книги')
+        print('6 - изменить данные читателя в формуляре')
+    act_num = input('? ')
+    if act_num == '1':
+        book.new_book()
+    if act_num == '2':
+        reader.new_reader()
+    if act_num == '3':
+        reader.reader_form_read()
+    if act_num == '4':
+        reader.reader_book_write()
+    if act_num == '5':
+        reader.reader_book_return()
+    if act_num == '6':
+        reader.reader_form_write()
+    print(act_num)
 
 
 start_prog()
