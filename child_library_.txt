@@ -1,0 +1,110 @@
+# Детская библиотека
+# Назаров ПВ
+# работа в консоле, просто файл
+
+import pickle  # Для работы с файлами
+
+Lib_books = []  # список всех книг библиотеки - каталог
+Lib_readers = []  # список всех читателей
+
+class Book:
+    def __init__(self, autor=' ', name=' ', annot=' ', number=' ', publication=2000, publishing=' '):
+        self.name = name  # название
+        self.autor = autor  # автор
+        self.annot = annot  # аннотация
+        self.number = number  # номер в каталоге
+        self.publication = publication  # год издания
+        self.publishing = publishing  # издательство
+
+    def new_book(self):
+        autor = input('Автор книги (авторы): ')
+        name = input('Название: ')
+        number = input('Номер в библиотечном каталоге: ')
+        publishing = input('Издательство: ')
+        publication = int(input('Год издания: '))
+        annot = input('Аннотация: ')
+        book_new = Book(autor, name, annot, number, publication, publishing)
+        Lib_books.append(book_new)
+        self.save_books()
+
+    @staticmethod
+    def save_books():
+        with open('books.pkl', 'wb') as f:
+            pickle.dump(Lib_books, f)
+
+    @staticmethod
+    def load_books():
+        global Lib_books
+        try:
+            with open('books.pkl', 'rb') as f:
+                Lib_books = pickle.load(f)
+        except FileNotFoundError:
+            pass
+
+class Reader:
+    curent_reader = None 
+    
+    def __init__(self, surname=' ', name=' ', famili=' ', number=0, class_num=' ', school=' '):
+        self.name = name  # имя
+        self.surname = surname  # отчество
+        self.famili = famili  # фамилия
+        self.class_num = class_num  # класс
+        self.school = school  # школа
+        self.number = number  # номер формуляра
+        self.books = []  # книги
+
+    def new_reader(self):
+        famili = input('Фамилия: ')
+        name = input('Имя: ')
+        surname = input('Отчество: ')
+        school = input('Школа: ')
+        class_num = input('Класс: ')
+        number = input('Номер формуляра: ')
+        Reader.curent_reader = Reader(famili, name, surname, school, class_num, number)
+        Lib_readers.append(Reader.curent_reader)
+
+    @staticmethod
+    def save_readers():
+        with open('readers.pkl', 'wb') as f:
+            pickle.dump(Lib_readers, f)
+
+    @staticmethod
+    def load_readers():
+        global Lib_readers
+        try:
+            with open('readers.pkl', 'rb') as f:
+                Lib_readers = pickle.load(f)
+        except FileNotFoundError:
+            pass
+
+def start_prog():
+    Book.load_books()
+    Reader.load_readers()
+
+    while True:
+        print('\nВас приветствует детская библиотека!')
+        print('1 - новая книга')
+        print('2 - новый читатель')
+        print('3 - посмотреть формуляр читателя')
+        print('4 - вписать книгу в формуляр')
+        print('5 - отметить возврат книги')
+        print('6 - изменить данные в формуляре')
+        print('0 - выйти из программы')
+
+        act_num = input('? ')
+        if act_num == '1':
+            b = Book()
+            b.new_book()
+        elif act_num == '2':
+            r = Reader()
+            r.new_reader()
+            Reader.save_readers()
+        elif act_num == '0':
+            print('Выход из программы...')
+            break
+
+start_prog()
+Особенности:
+Сохранение и загрузка: Мы используем модуль pickle для сохранения и загрузки книг и читателей. Это позволяет сохранять данные между запусками программы.
+Цикл: Программа запускает цикл, который позволяет пользователю выполнять действия до тех пор, пока он не решит выйти, выбрав 0.
+Упрощение подхода: методы для загрузки и сохранения данных выделены в статические методы для удобства.
