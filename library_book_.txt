@@ -1,0 +1,66 @@
+import pickle
+
+Lib_file_name = 'child_library_books.pkl'
+Lib_books = []  # список всех книг библиотеки - каталог
+
+class Book:
+    def __init__(self, autor=' ', name=' ', annot=' ', number=' ', publication=2000, publishing=' '):
+        self.name = name  # название
+        self.autor = autor  # автор
+        self.annot = annot  # аннотация
+        self.number = number  # номер в каталоге
+        self.publication = publication  # год издания
+        self.publishing = publishing  # издательство
+
+    def new_book():
+        autor = input('Автор книги (авторы): ')
+        name = input('Название: ')
+        number = input('Номер в библиотечном каталоге: ')
+        publishing = input('Издательство: ')
+        publication = int(input('Год издания: '))
+        annot = input('Аннотация: ')
+        book_new = Book(autor, name, annot, number, publication, publishing)
+        Lib_books.append(book_new)
+        save_books()  # Сохраняем изменения после добавления новой книги
+
+def save_books():
+    with open(Lib_file_name, 'wb') as f:
+        pickle.dump(Lib_books, f)
+
+def load_books():
+    try:
+        with open(Lib_file_name, 'rb') as f:
+            return pickle.load(f)
+    except (FileNotFoundError, EOFError):
+        return []
+
+def print_books():
+    for idx, book in enumerate(Lib_books):
+        print(f"{idx + 1}: {book.name} (Автор: {book.autor}, Год: {book.publication})")
+
+def compare_books(new_book):
+    for book in Lib_books:
+        if book.name == new_book.name and book.autor == new_book.autor:
+            return True
+    return False
+
+def start_prog():
+    global Lib_books
+    Lib_books = load_books()  # Загружаем книги из файла
+
+    print('Вас приветствует детская библиотека!')
+    print()
+    print('1 - новая книга')
+    print('2 - показать все книги')
+
+    act_num = input('? ')
+    if act_num == '1':
+        Book.new_book()
+    elif act_num == '2':
+        print_books()
+
+start_prog()
+Пояснения:
+Сохранение и загрузка книг: Методы save_books и load_books используют библиотеку pickle для записи и чтения списка книг в файл.
+Печать всех книг: Метод print_books выводит на экран все книги из библиотеки.
+Сравнение книг: Метод compare_books проверяет, есть ли уже книга с таким же названием и автором в списке.
