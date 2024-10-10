@@ -76,3 +76,101 @@ if __name__ == "__main__":
 Дальнейшие шаги:
 Вам нужно заполнить функции add_book, show_books, add_reader и show_readers подробной логикой.
 Также необходимо добавить окна для ввода данных с помощью tk.Entry и других элементов интерфейса.
+
+import tkinter as tk
+from tkinter import messagebox
+import sqlite3
+
+# Настройка базы данных
+def setup_db():
+    conn = sqlite3.connect('library.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS books (
+            id INTEGER PRIMARY KEY,
+            autor TEXT, 
+            name TEXT, 
+            annot TEXT,
+            number TEXT, 
+            publication INTEGER, 
+            publishing TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS readers (
+            id INTEGER PRIMARY KEY,
+            famili TEXT, 
+            name TEXT, 
+            surname TEXT,
+            school TEXT,
+            class_num TEXT,
+            number TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Добавление новой книги
+def add_book():
+    autor = autor_entry.get()
+    name = name_entry.get()
+    number = number_entry.get()
+    publishing = publishing_entry.get()
+    publication = publication_entry.get()
+    annot = annot_entry.get()
+
+    conn = sqlite3.connect('library.db')
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO books (autor, name, annot, number, publication, publishing) VALUES (?, ?, ?, ?, ?, ?)',
+                   (autor, name, annot, number, publication, publishing))
+    conn.commit()
+    conn.close()
+    
+    messagebox.showinfo("Успех", "Книга успешно добавлена!")
+
+# Создание интерфейса
+def create_window():
+    global autor_entry, name_entry, number_entry, publishing_entry, publication_entry, annot_entry
+    
+    window = tk.Tk()
+    window.title("Библиотека")
+
+    # Кнопки и поля для ввода книг
+    tk.Label(window, text="Автор:").grid(row=0, column=0)
+    autor_entry = tk.Entry(window)
+    autor_entry.grid(row=0, column=1)
+
+    tk.Label(window, text="Название:").grid(row=1, column=0)
+    name_entry = tk.Entry(window)
+    name_entry.grid(row=1, column=1)
+
+    tk.Label(window, text="Номер в каталоге:").grid(row=2, column=0)
+    number_entry = tk.Entry(window)
+    number_entry.grid(row=2, column=1)
+
+    tk.Label(window, text="Издательство:").grid(row=3, column=0)
+    publishing_entry = tk.Entry(window)
+    publishing_entry.grid(row=3, column=1)
+
+    tk.Label(window, text="Год издания:").grid(row=4, column=0)
+    publication_entry = tk.Entry(window)
+    publication_entry.grid(row=4, column=1)
+
+    tk.Label(window, text="Аннотация:").grid(row=5, column=0)
+    annot_entry = tk.Entry(window)
+    annot_entry.grid(row=5, column=1)
+
+    tk.Button(window, text="Добавить книгу", command=add_book).grid(row=6, columnspan=2)
+
+    window.mainloop()
+
+# Настройка базы данных и запуск интерфейса
+setup_db()
+create_window()
+Краткое объяснение:
+SQLite - база данных используется для хранения информации о книгах и читателях.
+Tkinter - интерфейс для создания окон с кнопками и полями ввода.
+Добавление новой книги - реализовано через ввод данных в поля и нажатие кнопки.
+Как использовать:
+Добавь необходимые функции для создания читателей, отображения всех книг и читателей, а также управления формулярами читателей.
+Когда добавляешь функции, ты также можешь добавить соответствующие кнопки и поля ввода.
