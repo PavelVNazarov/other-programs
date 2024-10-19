@@ -1,0 +1,57 @@
+Для анализа базы данных и получения информации о структуре таблиц, включая список ячеек (столбцов) и типы данных, можно использовать SQL-запросы. Примерный код будет зависеть от используемой базы данных (например, MySQL, PostgreSQL, SQLite и т.д.).
+
+Вот пример кода на Python с использованием библиотеки sqlite3, который выводит информацию о столбцах и их типах данных для всех таблиц в базе данных SQLite:
+
+import sqlite3
+
+def analyze_database(db_name):
+    # Подключаемся к базе данных
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    
+    # Получаем список всех таблиц
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = cursor.fetchall()
+    
+    for table in tables:
+        table_name = table[0]
+        print(f"Table: {table_name}")
+        
+        # Получаем информацию о столбцах и типах данных
+        cursor.execute(f"PRAGMA table_info({table_name});")
+        columns = cursor.fetchall()
+        
+        for column in columns:
+            column_name = column[1]
+            data_type = column[2]
+            print(f"  Column: {column_name}, Type: {data_type}")
+    
+    # Закрываем соединение
+    conn.close()
+
+# Используйте Вашу базу данных
+analyze_database('your_database.db')
+
+Если Вы работаете с другой базой данных, вот примеры SQL-запросов для некоторых популярных СУБД:
+PostgreSQL:
+SQL
+
+SELECT table_name, column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = 'public';
+
+MySQL:
+SQL
+
+SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE 
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_SCHEMA = 'your_database_name';
+
+Oracle:
+SQL
+
+SELECT table_name, column_name, data_type 
+FROM user_tab_columns;
+Как использовать:
+Замените your_database.db на название Вашей базы данных в приведенном выше Python коде.
+Для других СУБД используйте соответствующие SQL-запросы в SQL-клиенте или управляющей программе.
