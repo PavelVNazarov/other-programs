@@ -1,0 +1,77 @@
+Чтобы изучить базу данных SQLite, убрать и добавить поля, можно использовать библиотеку sqlite3 в Python. Ниже приведён пример программы, которая выполняет указанные действия.
+
+Установка SQLite
+SQLite включен в стандартную библиотеку Python, поэтому Вам не нужно ничего устанавливать дополнительно. Просто убедитесь, что у Вас установлен Python.
+
+Пример программы
+Python
+Копировать
+import sqlite3
+
+# Подключаемся к базе данных или создаем новую
+conn = sqlite3.connect('example.db')
+cursor = conn.cursor()
+
+# Создаем таблицу для примера
+def create_table():
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            age INTEGER,
+            email TEXT
+        )
+    ''')
+    conn.commit()
+
+# Добавляем новое поле
+def add_column():
+    try:
+        cursor.execute('ALTER TABLE users ADD COLUMN address TEXT')  # Добавляем новое поле адреса
+        conn.commit()
+        print("Столбец 'address' успешно добавлен.")
+    except sqlite3.OperationalError as e:
+        print(f"Ошибка: {e}")
+
+# Убираем ненужное поле. В SQLite нельзя удалить столбец напрямую, 
+# поэтому мы создадим новую таблицу без этого поля и перенесем данные.
+def remove_column():
+    try:
+        cursor.execute('''
+            CREATE TABLE users_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                age INTEGER,
+                email TEXT
+            )
+        ''')
+        
+        cursor.execute('INSERT INTO users_new (id, name, age, email) SELECT id, name, age, email FROM users')
+        cursor.execute('DROP TABLE users')
+        cursor.execute('ALTER TABLE users_new RENAME TO users')
+        
+        conn.commit()
+        print("Столбец 'address' успешно удалён, таблица обновлена.")
+    except sqlite3.OperationalError as e:
+        print(f"Ошибка: {e}")
+
+# Запускаем функции для демонстрации
+create_table()
+add_column()
+remove_column()
+
+# Закрываем соединение
+conn.close()
+Описание кода
+Подключение и создание таблицы: Создаёт базу данных example.db и таблицу users с начальным набором полей.
+Добавление нового поля: Функция add_column добавляет новое поле address.
+Удаление поля: В SQLite нет команды для удаления столбца, поэтому мы создаём новую таблицу без лишнего поля, копируем в неё данные из старой таблицы и переименовываем новую таблицу.
+Запуск
+Чтобы запустить программу, просто скопируйте код в файл, например, database_manager.py, и выполните его с помощью Python:
+
+Bash
+Копировать
+python database_manager.py
+Важные моменты
+Убедитесь, что у Вас нет активных соединений с базой данных перед изменениями.
+Резервное копирование базы данных перед выполнением операций, изменяющих структуру, будет хорошей практикой.
