@@ -1,0 +1,110 @@
+объясним каждый оператор.
+
+Шаг 1: Импорт необходимых библиотек
+
+import sqlite3
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
+from PIL import Image, ImageTk
+sqlite3: библиотека для работы с SQLite базами данных.
+tkinter: стандартная библиотека для создания графических интерфейсов.
+ttk: модуль из tkinter, который содержит виджеты с улучшенным стилем.
+messagebox: модуль для отображения всплывающих окон с сообщениями.
+PIL: библиотека для работы с изображениями.
+
+Шаг 2: Создание главного окна
+
+root = tk.Tk()
+root.title("библиотека")
+root.geometry("800x600")
+root.resizable(False, False)  # Запретить изменение размеров окна
+tk.Tk(): создает основное окно приложения.
+title("библиотека"): задает название окна.
+geometry("800x600"): устанавливает размеры окна.
+resizable(False, False): предотвращает изменение размеров окна пользователем.
+
+Шаг 3: Создание вкладок
+
+tab_control = ttk.Notebook(root)
+ttk.Notebook(root): создаёт компонент "блокнот" для организации вкладок.
+
+Шаг 4: Добавление вкладок
+
+tabs = {
+    "Главная": tk.Frame(tab_control),
+    "Читатели": tk.Frame(tab_control),
+    "Книги": tk.Frame(tab_control),
+    "Библиотека": tk.Frame(tab_control),
+    "Администратор": tk.Frame(tab_control)
+}
+
+for tab_name, tab_frame in tabs.items():
+    tab_control.add(tab_frame, text=tab_name)
+tab_control.pack(expand=1, fill="both")
+Создает словарь, где ключи — названия вкладок, а значения — соответствующие фреймы для этих вкладок.
+Цикл добавляет каждую вкладку во вкладочник.
+
+Шаг 5: Вкладка "Главная" с изображением
+
+img = Image.open("your_image.png")  # Замените на Ваш файл
+img = img.resize((400, 300))  # Изменение размера изображения
+img_tk = ImageTk.PhotoImage(img)
+label = tk.Label(tabs["Главная"], image=img_tk)
+label.pack()
+
+Загружает изображение и изменяет его размер, затем помещает в лейбл на вкладке "Главная".
+
+Шаг 6: Добавление кнопок на вкладках
+Для вкладки "Книги":
+
+def find_book():
+    print("Поиск книги...")
+
+def new_book():
+    print("Новая книга...")
+
+tk.Button(tabs["Книги"], text="Найти книгу", command=find_book).pack()
+tk.Button(tabs["Книги"], text="Новая книга", command=new_book).pack()
+
+Для вкладки "Читатели":
+
+def new_reader():
+    print("Новый читатель...")
+
+def find_reader():
+    print("Поиск читателя...")
+
+tk.Button(tabs["Читатели"], text="Новый читатель", command=new_reader).pack()
+tk.Button(tabs["Читатели"], text="Найти читателя", command=find_reader).pack()
+
+Для вкладки "Библиотека":
+
+img_lib = Image.open("library_image.png")  # Замените на Ваш файл
+img_lib = img_lib.resize((400, 300)) 
+img_lib_tk = ImageTk.PhotoImage(img_lib)
+label_lib = tk.Label(tabs["Библиотека"], image=img_lib_tk)
+label_lib.pack()
+tk.Label(tabs["Библиотека"], text="Здравствуйте, здесь будет краткая информация о нашей библиотеке.").pack()
+tk.Button(tabs["Библиотека"], text="О нас").pack()
+tk.Button(tabs["Библиотека"], text="Библиотекари").pack()
+
+Для вкладки "Администратор":
+
+def validate_password():
+    if hash_password(entry.get()) == "hashed_correct_password":  # Вместо "hashed_correct_password" используйте хеш
+        tk.Button(tabs["Администратор"], text="Сотрудники").pack()
+
+def hash_password(password):
+    import hashlib
+    return hashlib.sha256(password.encode()).hexdigest()
+
+tk.Label(tabs["Администратор"], text="Введите пароль:").pack()
+entry = tk.Entry(tabs["Администратор"], show='*')
+entry.pack()
+tk.Button(tabs["Администратор"], text="Вход", command=validate_password).pack()
+
+Шаг 7: Запуск главного цикла
+
+root.mainloop()
+Запускает главный цикл приложения, ожидая действий пользователя.
