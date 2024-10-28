@@ -198,5 +198,70 @@ class HomePageTests(TestCase):
         response = self.client.get(reverse('home'))
         self.assertEqual(response.status_code, 200)
 
+добавим логику для обработки изображения и детекции объектов с использованием модели MobileNet SSD. Ваш код в файле utils.py будет выглядеть следующим образом:
+
+Python
+Копировать
+# object_detection/utils.py
+
+def process_image(image_path):
+    import cv2
+    import numpy as np
+
+    # Загрузка модели
+    model = cv2.dnn.readNetFromCaffe('mobilenet_ssd_deploy.prototxt', 'mobilenet_iter_73000.caffemodel')
+
+    # Загрузка изображения
+    image = cv2.imread(image_path)
+    (h, w) = image.shape[:2]
+
+    # Подготовка изображения к входу модели
+    blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), 0.007843, (300, 300), 127.5)
+    model.setInput(blob)
+    detections = model.forward()
+
+    # Определяем классы, распознаваемые моделью
+    classes = [
+        "background", "aeroplane", "bicycle", "bird", "boat", "bottle",
+        "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse",
+        "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"
+    ]
+
+    # Данные для сохранения результатов
+    results = []
+
+    # Обработка результатов
+    for i in range(detections.shape[2]):
+        confidence = detections[0, 0, i, 2]
+        if confidence > 0.5:  # Фильтруем слабые результаты
+            class_id = int(detections[0, 0, i, 1])
+            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+            (startX, startY, endX, endY) = box.astype("int")
+
+            # Сохраняем результаты
+            results.append({
+                "class_id": class_id,
+                "class_name": classes[class_id],
+                "confidence": confidence,
+                "box": (startX, startY, endX, endY)
+            })
+
+            # Рисуем рамку вокруг обнаруженного объекта
+            label = "{}: {:.2f}%".format(classes[class_id], confidence * 100)
+            cv2.rectangle(image, (startX, startY), (endX, endY), (255, 0, 0), 2)
+            cv2.putText(image, label, (startX, startY - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+    # Сохраняем обработанное изображение
+    processed_image_path = image_path.replace('images', 'processed_images')
+    cv2.imwrite(processed_image_path, image)
+
+    return results, processed_image_path
+Объяснение кода:
+Загрузка модели: Мы загружаем предобученную модель MobileNet SSD с помощью OpenCV.
+Обработка изображения: Изображение изменяется до нужного размера (300x300 пикселей) и преобразуется в формат, подходящий для модели.
+Детекция объектов: Результаты получения объектов обрабатываются и отфильтровываются по уровню уверенности (confidence).
+Рисование рамок и сохранение результата: Мы создаём рамки вокруг обнаруженных объектов и сохраняем обработанное изображение в отдельной директории processed_images.
+
+
 
 
