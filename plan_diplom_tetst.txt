@@ -2,11 +2,10 @@
 
 1. Общая структура
 Убедитесь, что понимаете, как работает каждый компонент, включая Django, Bootstrap и библиотеку для обработки изображений.
+
 2. Настройка проекта
 Создайте проект Django:
 
-Bash
-Копировать
 django-admin startproject detection_site
 cd detection_site
 python manage.py startapp object_detection
@@ -14,10 +13,10 @@ python manage.py startapp object_detection
 
 Добавьте приложение object_detection в INSTALLED_APPS.
 Настройте MEDIA_URL и MEDIA_ROOT для загрузки изображений.
+
 3. Модели
 Определите модель ImageFeed в models.py, чтобы хранить загруженные изображения и результаты обработки.
-Python
-Копировать
+
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -26,12 +25,13 @@ class ImageFeed(models.Model):
     image = models.ImageField(upload_to='images/')
     processed_image = models.ImageField(upload_to='processed_images/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
 4. Шаблоны
 Убедитесь, что у Вас есть правильный шаблон base.html, который будет использоваться для других страниц. Подключите Bootstrap и создайте навигационную панель.
+
 5. URL-адреса
 Настройте маршрутизацию в urls.py Вашего приложения.
-Python
-Копировать
+
 from django.urls import path
 from . import views
 
@@ -42,6 +42,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('add_image/', views.add_image_feed, name='add_image_feed'),
 ]
+
 6. Вьюхи
 Реализуйте все вьюхи в views.py, включая регистрацию, логин и загрузку изображений.
 7. Обработка изображений
@@ -55,8 +56,7 @@ urlpatterns = [
 Отлично, давай поэтапно разберемся с настройками и реализацией твоего проекта.
 
 1. Настройка settings.py
-Python
-Копировать
+
 # detection_site/settings.py
 
 INSTALLED_APPS = [
@@ -67,11 +67,10 @@ INSTALLED_APPS = [
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
 2. Шаблон base.html
 Создавай файл base.html в папке templates/object_detection:
 
-HTML, XML
-Копировать
 <!-- templates/object_detection/base.html -->
 <!DOCTYPE html>
 <html lang="en">
@@ -109,11 +108,10 @@ HTML, XML
 </div>
 </body>
 </html>
+
 3. Реализация вьюх в views.py
 Пример реализации вьюх:
 
-Python
-Копировать
 # object_detection/views.py
 
 from django.shortcuts import render, redirect
@@ -164,9 +162,9 @@ def upload_image(request):
     else:
         form = ImageUploadForm()
     return render(request, 'object_detection/add_image_feed.html', {'form': form})
+
 4. Обработка изображений в utils.py
-Python
-Копировать
+
 # object_detection/utils.py
 
 def process_image(image_path):
@@ -175,19 +173,17 @@ def process_image(image_path):
     model = cv2.dnn.readNetFromCaffe('mobilenet_ssd_deploy.prototxt', 'mobilenet_iter_73000.caffemodel')
     image = cv2.imread(image_path)
     # Здесь добавь логику обработки (например, детекцию объектов)
+
 5. Авторизация
 С встроенными механизмами авторизации заработает так, как показано выше, а использование декоратора @login_required к дашборду обеспечит, что только авторизованные пользователи имеют доступ.
 
 6. Тестирование
 Создай отдельное приложение для тестов:
 
-Bash
-Копировать
 python manage.py startapp tests
+
 Добавь базовые тесты в tests/tests.py. Например:
 
-Python
-Копировать
 # tests/tests.py
 
 from django.test import TestCase
@@ -200,8 +196,6 @@ class HomePageTests(TestCase):
 
 добавим логику для обработки изображения и детекции объектов с использованием модели MobileNet SSD. Ваш код в файле utils.py будет выглядеть следующим образом:
 
-Python
-Копировать
 # object_detection/utils.py
 
 def process_image(image_path):
@@ -256,12 +250,47 @@ def process_image(image_path):
     cv2.imwrite(processed_image_path, image)
 
     return results, processed_image_path
+
 Объяснение кода:
 Загрузка модели: Мы загружаем предобученную модель MobileNet SSD с помощью OpenCV.
 Обработка изображения: Изображение изменяется до нужного размера (300x300 пикселей) и преобразуется в формат, подходящий для модели.
 Детекция объектов: Результаты получения объектов обрабатываются и отфильтровываются по уровню уверенности (confidence).
 Рисование рамок и сохранение результата: Мы создаём рамки вокруг обнаруженных объектов и сохраняем обработанное изображение в отдельной директории processed_images.
 
+Если у Вас еще нет формы для загрузки изображений, давайте создадим её. В Django для этого потребуется создать класс формы, который будет наследоваться от forms.ModelForm.
 
+Вот как это можно сделать:
+
+Создайте форму для загрузки изображений в файле forms.py внутри приложения object_detection.
+
+# object_detection/forms.py
+
+from django import forms
+from .models import ImageFeed  # Предполагается, что у Вас есть модель ImageFeed
+
+class ImageUploadForm(forms.ModelForm):
+    class Meta:
+        model = ImageFeed  # Убедитесь, что у Вас есть такая модель
+        fields = ['image']  # Поле для загрузки изображения
+Создайте модель для хранения изображений, если её ещё нет. В файле models.py добавьте:
+
+# object_detection/models.py
+
+from django.db import models
+from django.contrib.auth.models import User
+
+class ImageFeed(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='images/')
+    processed_image = models.ImageField(upload_to='processed_images/', blank=True, null=True)  # Для сохранения обработанного изображения
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s image - {self.created_at}"
+Не забудьте мигрировать изменения:
+
+python manage.py makemigrations
+python manage.py migrate
+Теперь у Вас будет форма для загрузки изображений, и Вы можете использовать её в Вашем views.py для обработки загруженных изображений.
 
 
