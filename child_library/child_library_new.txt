@@ -45,3 +45,107 @@ db.add_book("Python Programming")
 books = db.get_books()
 db.close()
 
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+import sqlite3
+import hashlib
+
+def create_db():
+    """Creates the database and tables if they don't exist."""
+    conn = sqlite3.connect('library.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS books (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            author TEXT,
+            genre TEXT,
+            publisher TEXT,
+            publication_year INTEGER,
+            copies_total INTEGER DEFAULT 1,
+            copies_available INTEGER DEFAULT 1,
+            is_archived INTEGER DEFAULT 0
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS readers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            is_archived INTEGER DEFAULT 0
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS loans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            book_id INTEGER NOT NULL,
+            reader_id INTEGER NOT NULL,
+            loan_date TEXT,
+            return_date TEXT,
+            FOREIGN KEY (book_id) REFERENCES books(id),
+            FOREIGN KEY (reader_id) REFERENCES readers(id)
+        )
+    ''')
+
+
+    conn.commit()
+    conn.close()
+
+
+def add_book(title, author="", genre="", publisher="", publication_year=None, copies=1):
+    """Adds a new book to the database.  Handles potential errors."""
+    if not title:
+        raise ValueError("Title cannot be empty.")
+    try:
+        conn = sqlite3.connect('library.db')
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO books (title, author, genre, publisher, publication_year, copies_total, copies_available)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (title, author, genre, publisher, publication_year, copies, copies))
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return False
+
+
+def search_books(search_term="", author="", genre="", publisher="", publication_year=None):
+    """Searches for books based on various criteria."""
+    conn = sqlite3.connect('library.db')
+    cursor = conn.cursor()
+    where_clause = "WHERE 1=1"  # Start with a true condition
+
+    if search_term:
+        where_clause += f" AND title LIKE '%{search_term}%'"
+    if author:
+        where_clause += f" AND author LIKE '%{author}%'"
+    if genre:
+        where_clause += f" AND genre LIKE '%{genre}%'"
+    if publisher:
+        where_clause += f" AND publisher LIKE '%{publisher}%'"
+    if publication_year:
+        where_clause += f" AND publication_year = {publication_year}"
+
+    cursor.execute(f"""
+        SELECT * FROM books {where_clause} AND is_archived = 0
+    """)
+    books = cursor.fetchall()
+    conn.close()
+    return books
+
+
+# Example usage (for testing):
+create_db()
+add_book("The Lord of the Rings", "J.R.R. Tolkien", "Fantasy", "Allen & Unwin", 1954, 2)
+add_book("Pride and Prejudice", "Jane Austen", "Romance", "T. Egerton", 1813)
+print(search_books(search_term="Lord"))
+print(search_books(author="Austen"))
+
+
+
+
