@@ -1,0 +1,47 @@
+import sqlite3
+import hashlib
+
+class LibraryDatabase:
+    def __init__(self, db_file="library.db"):
+        self.conn = sqlite3.connect(db_file)
+        self.cursor = self.conn.cursor()
+        self.create_tables()
+
+    def create_tables(self):
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS books (id INTEGER PRIMARY KEY, title TEXT, is_archived INTEGER DEFAULT 0)''')
+        self.cursor.execute('''CREATE TABLE IF NOT EXISTS readers (id INTEGER PRIMARY KEY, name TEXT, is_archived INTEGER DEFAULT 0)''')
+        self.conn.commit()
+
+    def add_book(self, title):
+        try:
+            self.cursor.execute("INSERT INTO books (title) VALUES (?)", (title,))
+            self.conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False  # Книга уже существует
+
+    def add_reader(self, name):
+        try:
+            self.cursor.execute("INSERT INTO readers (name) VALUES (?)", (name,))
+            self.conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+    def get_books(self):
+        self.cursor.execute("SELECT * FROM books WHERE is_archived = 0") # Только активные книги
+        return self.cursor.fetchall()
+
+    def get_readers(self):
+        self.cursor.execute("SELECT * FROM readers WHERE is_archived = 0") # Только активные читатели
+        return self.cursor.fetchall()
+
+    def close(self):
+        self.conn.close()
+
+#Пример использования:
+db = LibraryDatabase()
+db.add_book("Python Programming")
+books = db.get_books()
+db.close()
+
