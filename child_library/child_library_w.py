@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
-from PIL import Image, ImageTk
+# from PIL import Image, ImageTk
 import hashlib
 
 # Создание базы данных и таблиц
@@ -82,19 +82,19 @@ tab_control.add(tab5, text='Администратор')
 tab_control.pack(expand=1, fill='both')
 
 # Добавление изображений на вкладки
-def load_image(tab, image_path):
-    img = Image.open(image_path)
-    img = img.resize((200, 200), Image.ANTIALIAS)
-    img = ImageTk.PhotoImage(img)
-    label = tk.Label(tab, image=img)
-    label.image = img  # Сохраняем ссылку на изображение
-    label.pack(side=tk.TOP)
+#def load_image(tab, image_path):
+#    img = Image.open(image_path)
+#    img = img.resize((200, 200), Image.ANTIALIAS)
+#    img = ImageTk.PhotoImage(img)
+#    label = tk.Label(tab, image=img)
+#    label.image = img  # Сохраняем ссылку на изображение
+#    label.pack(side=tk.TOP)
 
-load_image(tab1, 'main_image.png')  # Замените на путь к Вашей картинке
-load_image(tab2, 'readers_image.png')  # Замените на путь к Вашей картинке
-load_image(tab3, 'books_image.png')  # Замените на путь к Вашей картинке
-load_image(tab4, 'library_image.png')  # Замените на путь к Вашей картинке
-load_image(tab5, 'admin_image.png')  # Замените на путь к Вашей картинке
+#load_image(tab1, 'main_image.png')  # Замените на путь к Вашей картинке
+#load_image(tab2, 'readers_image.png')  # Замените на путь к Вашей картинке
+#load_image(tab3, 'books_image.png')  # Замените на путь к Вашей картинке
+#load_image(tab4, 'library_image.png')  # Замените на путь к Вашей картинке
+#load_image(tab5, 'admin_image.png')  # Замените на путь к Вашей картинке
 
 # Кнопки на вкладке "Книги"
 def add_book_button():
