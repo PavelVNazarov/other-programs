@@ -76,3 +76,50 @@ def return_book(book_id, reader_id):
 Список невозвращенных книг для читателя: SELECT b.title FROM book_loans bl JOIN books b ON bl.book_id = b.id WHERE bl.reader_id = ? AND bl.return_date IS NULL
 Читатель, взявший книгу: SELECT r.name FROM book_loans bl JOIN readers r ON bl.reader_id = r.id WHERE bl.book_id = ? AND bl.return_date IS NULL
 Это лишь план.  Реализация потребует значительных усилий по написанию кода и проектированию интерфейса.  Начните с добавления генерации кодов и модификации базы данных.  Затем, пошагово,  добавьте функционал выдачи/возврата книг и обновление интерфейса.  Какую часть Вы хотите реализовать сначала?  Давайте сфокусируемся на одном шаге за раз.
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+import sqlite3
+from PIL import Image, ImageTk
+import hashlib
+
+# ... (предыдущий код) ...
+
+# Вкладка "Администратор"
+tab5 = ttk.Frame(tab_control)
+tab_control.add(tab5, text='Администратор')
+
+# Виджеты для авторизации
+password_label = tk.Label(tab5, text="Пароль:")
+password_entry = tk.Entry(tab5, show="*")
+login_button = tk.Button(tab5, text="Войти", command=lambda:check_password_and_show_admin_panel(password_entry.get()))
+
+password_label.pack(pady=5)
+password_entry.pack(pady=5)
+login_button.pack(pady=5)
+
+def check_password_and_show_admin_panel(input_password):
+    if check_password(input_password):
+        # Скрываем форму авторизации
+        password_label.pack_forget()
+        password_entry.pack_forget()
+        login_button.pack_forget()
+
+        # Показываем элементы административной панели
+        # ... (Здесь будет код для отображения элементов управления) ...
+        messagebox.showinfo("Успех", "Вход выполнен успешно!")
+    else:
+        messagebox.showerror("Ошибка", "Неверный пароль")
+
+# ... (остальной код) ...
+
+load_image(tab1, 'main_image.png')
+load_image(tab2, 'readers_image.png')
+load_image(tab3, 'books_image.png')
+load_image(tab4, 'library_image.png')
+load_image(tab5, 'admin_image.png')
+
+root.mainloop()
+Этот код добавляет форму авторизации на вкладку "Администратор". После успешного входа, форма авторизации скрывается,  и  # ... (Здесь будет код для отображения элементов управления) ...  будет заменен на  виджеты для администрирования.  Обратите внимание на использование lambda для передачи значения из password_entry в функцию check_password_and_show_admin_panel.
+
+
