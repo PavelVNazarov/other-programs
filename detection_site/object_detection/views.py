@@ -1,12 +1,10 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from .models import ImageFeed
-#from .object_detection.forms import ImageFeedForm
-from django.shortcuts import render
+from .forms import ImageFeedForm  # Убедитесь, что Вы импортируете эту форму
 from django.contrib.auth.decorators import login_required
-
 
 def home(request):
     return render(request, 'object_detection/home.html')
@@ -20,7 +18,7 @@ def login_view(request):
             login(request, user)
             return redirect('dashboard')
         else:
-            return render(request, 'object_detection/login.html', {'error': 'Неверные учетные данные'})
+            messages.error(request, 'Неверное имя пользователя или пароль.')
     return render(request, 'object_detection/login.html')
 
 def register(request):
@@ -28,7 +26,11 @@ def register(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('login')
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=password)
+            login(request, user)  # Автоматический вход после регистрации
+            return redirect('dashboard')
     else:
         form = UserCreationForm()
     return render(request, 'object_detection/register.html', {'form': form})
@@ -49,35 +51,9 @@ def add_image_feed(request):
             return redirect('dashboard')  # Перенаправляем на дашборд после успешной загрузки
     else:
         form = ImageFeedForm()
-    return render(request, 'object_detection/add_image_feed.html')
-    #return render(request, 'object_detection/add_image_feed.html', {'form': form})
+    return render(request, 'object_detection/add_image_feed.html', {'form': form})
 
-def register(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password1')
-            user = authenticate(username=username, password=password)
-            login(request, user)
-            return redirect('dashboard')
-    else:
-        form = UserCreationForm()
-    return render(request, 'object_detection/register.html', {'form': form})
-
-def login_view(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('dashboard')
-        else:
-            messages.error(request, 'Неверное имя пользователя или пароль.')
-    return render(request, 'object_detection/login.html')
-
+@login_required
 def logout_view(request):
     logout(request)
     return redirect('login')
