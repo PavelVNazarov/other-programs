@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд</title>
+</head>
+<body>
+    <h1>Дашборд</h1>
+    <a href="{% url 'logout' %}">Выйти</a>
+    <a href="{% url 'add_image_feed' %}">Добавить изображение</a>
+    
+    <h2>Мои изображения:</h2>
+    {% for image in images %}
+        <div>
+            <img src="{{ image.image.url }}" alt="Image" />
+            <p>{{ image.description }}</p>
+        </div>
+    {% empty %}
+        <p>Нет изображений.</p>
+    {% endfor %}
+</body>
+</html>
