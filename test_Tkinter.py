@@ -56,3 +56,46 @@ root.mainloop()
 #Текстовая область для ввода многострочного текста.
 #Запуск цикла приложения: Вызов mainloop() запускает основной цикл событий Tkinter, который ожидает от пользователя действий.
 
+import tkinter as tk
+from tkinter import ttk
+
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Пример Tkinter")
+        self.geometry("400x300")
+
+        self.main_frame = ttk.Frame(self)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.label = ttk.Label(self.main_frame, text="Главное окно")
+        self.label.pack(pady=10)
+
+        self.button_open = ttk.Button(self.main_frame, text="Открыть фрейм", command=self.open_frame)
+        self.button_open.pack(pady=10)
+
+        self.button_quit = ttk.Button(self.main_frame, text="Выход", command=self.quit)
+        self.button_quit.pack(pady=10)
+
+    def open_frame(self):
+        self.new_window = tk.Toplevel(self)
+        self.new_window.title("Дополнительное окно")
+        self.new_window.geometry("300x200")
+
+        label = ttk.Label(self.new_window, text="Это дополнительное окно")
+        label.pack(pady=10)
+
+        button_close = ttk.Button(self.new_window, text="Закрыть", command=self.new_window.destroy)
+        button_close.pack(pady=10)
+
+if __name__ == "__main__":
+    app = App()
+    app.mainloop()
+    
+# Объяснение кода:
+# Создаётся основное окно (App), в котором есть фрейм (main_frame).
+# При нажатии на кнопку "Открыть фрейм" создаётся дополнительное окно (Toplevel).
+# Каждое дополнительное окно можно закрыть с помощью кнопки "Закрыть".
+
+
+
