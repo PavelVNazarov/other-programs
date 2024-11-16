@@ -1,0 +1,142 @@
+Шаг 1: Установка Django
+Если еще не установлен Django, установить его с помощью pip:
+
+pip install django
+
+Шаг 2: Создание нового проекта
+Создать новый проект и приложение:
+
+django-admin startproject task_manager
+cd task_manager
+django-admin startapp tasks
+
+Шаг 3: Настройка приложений
+Добавить tasks в INSTALLED_APPS в settings.py:
+
+# task_manager/settings.py
+INSTALLED_APPS = [
+    ...
+    'tasks',
+]
+
+Шаг 4: Создание модели
+Создать модель Task в tasks/models.py:
+
+# tasks/models.py
+from django.db import models
+
+class Task(models.Model):
+    colleague_name = models.CharField(max_length=100)
+    task_desc = models.TextField()
+
+    def __str__(self):
+        return f"{self.colleague_name}: {self.task_desc}"
+      
+Шаг 5: Создание миграций
+Запустить миграции для создания таблицы базы данных:
+
+python manage.py makemigrations
+python manage.py migrate
+
+Шаг 6: Создание представлений
+Создать представления для управления задачами в tasks/views.py:
+
+# tasks/views.py
+from django.shortcuts import render, redirect
+from .models import Task
+
+def home(request):
+    if request.method == "POST":
+        colleague_name = request.POST.get('colleague_name')
+        task_desc = request.POST.get('task_desc')
+        # Добавление новой задачи
+        if colleague_name and task_desc:
+            Task.objects.create(colleague_name=colleague_name, task_desc=task_desc)
+            return redirect('home')
+
+    tasks = Task.objects.all()
+    return render(request, 'tasks/home.html', {'tasks': tasks})
+
+def colleague_tasks(request, colleague_name):
+    tasks = Task.objects.filter(colleague_name=colleague_name)
+    return render(request, 'tasks/colleague_tasks.html', {'tasks': tasks, 'colleague_name': colleague_name})
+  
+Шаг 7: Настройка URL
+Создать tasks/urls.py и добавить маршруты:
+
+# tasks/urls.py
+from django.urls import path
+from .views import home, colleague_tasks
+
+urlpatterns = [
+    path('', home, name='home'),
+    path('tasks/<str:colleague_name>/', colleague_tasks, name='colleague_tasks'),
+]
+
+Включить эти URL в файле task_manager/urls.py:
+
+# task_manager/urls.py
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('tasks.urls')),
+]
+
+Шаг 8: Создание шаблонов
+Создать папку tasks/templates/tasks/ и добавить следующий шаблон home.html:
+
+<!-- tasks/templates/tasks/home.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Task Manager</title>
+</head>
+<body>
+    <h1>Задачи</h1>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="colleague_name" placeholder="Имя коллеги">
+        <input type="text" name="task_desc" placeholder="Описание задачи">
+        <button type="submit">Добавить задачу</button>
+    </form>
+    <h2>Список задач:</h2>
+    <ul>
+        {% for task in tasks %}
+            <li>
+                <a href="{% url 'colleague_tasks' task.colleague_name %}">{{ task.colleague_name }}</a>: {{ task.task_desc }}
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+
+Создать еще один шаблон colleague_tasks.html:
+
+<!-- tasks/templates/tasks/colleague_tasks.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Задачи для {{ colleague_name }}</title>
+</head>
+<body>
+    <h1>Задачи для {{ colleague_name }}</h1>
+    <ul>
+        {% for task in tasks %}
+            <li>{{ task.task_desc }}</li>
+        {% empty %}
+            <li>Нет задач.</li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'home' %}">Назад</a>
+</body>
+</html>
+
+Шаг 9: Запуск сервера
+
+python manage.py runserver
+
+Перейти на http://127.0.0.1:8000/, чтобы увидеть приложение для управления задачами!
