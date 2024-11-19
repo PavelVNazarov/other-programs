@@ -2,116 +2,125 @@ import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher import State, Dispatcher
+from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils import executor
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-API_TOKEN = 'YOUR_API_TOKEN'
-
-# Настройка логирования
+#API_TOKEN = 'YOUR_API_TOKEN'
+API_TOKEN = '7528963854:AAGLegRWedP3Wg4Q9ny07GKksOo01ebDo70'
 logging.basicConfig(level=logging.INFO)
 
 # Инициализация бота и диспетчера
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
-
-# Словарь для хранения задач
 schedule = {}
+contacts = {}
 
-# Состояния
+
 class Form(StatesGroup):
-    waiting_for_name = State()
-    waiting_for_command = State()
-    waiting_for_colleague_name = State()
+    main_menu = State()
+    waiting_for_contact_name = State()
     waiting_for_task = State()
 
-# Команда /start
+
+def main_menu_keyboard():
+    keyboard = InlineKeyboardMarkup(row_width=2)
+    keyboard.add(InlineKeyboardButton("Список контактов", callback_data='contacts'),
+                 InlineKeyboardButton("Дела на сегодня", callback_data='today_tasks'))
+    return keyboard
+
+
 @dp.message_handler(commands=['start'])
 async def start_command(message: types.Message):
-    await message.reply("Привет! Как тебя зовут?")
-    await Form.waiting_for_name.set()
+    await message.reply("Привет! Я бот-помощник.\n"
+                        "Выбери пункт меню:", reply_markup=main_menu_keyboard())
+    await Form.main_menu.set()
 
-# Обработка имени пользователя
-@dp.message_handler(state=Form.waiting_for_name)
-async def process_name(message: types.Message, state: FSMContext):
-    name = message.text
-    await state.update_data(name=name)
-    await message.reply(f"Привет, {name}!\nЯ твой бот-помощник.\n"
-                         "Я буду хранить данные о твоих задачах на день.\n"
-                         "Для управления мной, используй команды:\n"
-                         "1. Вывести все задачи\n"
-                         "2. Вывести задачи по одному из коллег\n"
-                         "3. Добавить новую задачу\n"
-                         "4. Добавить нового коллегу\n"
-                         "5. Завершить работу бота")
-    await Form.waiting_for_command.set()
 
-# Обработка команд
-@dp.message_handler(state=Form.waiting_for_command)
-async def process_command(message: types.Message, state: FSMContext):
-    command = message.text
-    data = await state.get_data()
-    name = data.get('name')
+@dp.callback_query_handler(state=Form.main_menu)
+async def process_main_menu(callback: types.CallbackQuery, state: FSMContext):
+    if callback.data == 'contacts':
+        await show_contacts(callback.message)
+    elif callback.data == 'today_tasks':
+        await show_today_tasks(callback.message)
 
-    if command == '1':
-        response = "Список дел на сегодня:\n"
-        for colleague, tasks in schedule.items():
-            response += f"{colleague}:\n{tasks}\n"
-        await message.reply(response)
 
-    elif command == '2':
-        await message.reply("Введите имя коллеги:")
-        await Form.waiting_for_colleague_name.set()
-
-    elif command == '3':
-        await message.reply("Введите имя коллеги:")
-        await Form.waiting_for_colleague_name.set()
-
-    elif command == '4':
-        await message.reply("Введите имя нового коллеги:")
-        await Form.waiting_for_colleague_name.set()
-
-    elif command == '5':
-        await message.reply("Завершение работы")
-        await state.finish()
-        await bot.close()
-
-# Обработка имени коллеги
-@dp.message_handler(state=Form.waiting_for_colleague_name)
-async def process_colleague_name(message: types.Message, state: FSMContext):
-    colleague_name = message.text
-    data = await state.get_data()
-
-    if 'task_mode' not in data or data['task_mode'] == 'add_task':
-        await state.update_data(colleague_name=colleague_name)
-        await message.reply("Введите задачу:")
-        await Form.waiting_for_task.set()
+async def show_contacts(message):
+    if contacts:
+        response = "Список контактов:\n" + "\n".join(contacts.keys())
     else:
-        # Вывести задачи по коллеге
-        if colleague_name in schedule:
-            response = f'Список дел по коллеге {colleague_name}:\n'
-            response += '\n'.join(schedule[colleague_name])
-            await message.reply(response)
-        else:
-            await message.reply(f"Нет такого коллеги: {colleague_name}")
+        response = "Контакты отсутствуют."
+    await message.answer(response)
 
-        await Form.waiting_for_command.set()
+    # Инлайн-кнопки для добавления контакта и обратно в главное меню
+    keyboard = InlineKeyboardMarkup(row_width=2)
+    keyboard.add(InlineKeyboardButton("Добавить контакт", callback_data='add_contact'),
+                 InlineKeyboardButton("На главную", callback_data='main_menu'))
+    await message.answer("Выберите действие:", reply_markup=keyboard)
 
-# Обработка задачи
+
+@dp.callback_query_handler(lambda c: c.data == 'add_contact', state=Form.main_menu)
+async def add_contact(callback: types.CallbackQuery):
+    await callback.message.answer("Введите имя нового контакта:")
+    await Form.waiting_for_contact_name.set()
+
+
+@dp.message_handler(state=Form.waiting_for_contact_name)
+async def process_contact_name(message: types.Message, state: FSMContext):
+    contact_name = message.text
+    contacts[contact_name] = []  # добавляем контакт в список контактов
+    await message.reply(f"Контакт '{contact_name}' добавлен!")
+    await state.finish()
+    await message.answer("Выберите пункт меню:", reply_markup=main_menu_keyboard())
+
+
+async def show_today_tasks(message):
+    response = "Задачи на сегодня:\n"
+    if schedule:
+        for contact, tasks in schedule.items():
+            response += f"{contact}:\n" + "\n".join(tasks) + "\n"
+    else:
+        response = "Задач на сегодня нет."
+    await message.answer(response)
+
+    # Инлайн-кнопки для добавления задачи и обратно в главное меню
+    keyboard = InlineKeyboardMarkup(row_width=2)
+    keyboard.add(InlineKeyboardButton("Добавить задачу", callback_data='add_task'),
+                 InlineKeyboardButton("На главную", callback_data='main_menu'))
+    await message.answer("Выберите действие:", reply_markup=keyboard)
+
+
+@dp.callback_query_handler(lambda c: c.data == 'add_task', state=Form.main_menu)
+async def add_task(callback: types.CallbackQuery):
+    await callback.message.answer("Введите имя контакта для добавления задачи:")
+    await Form.waiting_for_contact_name.set()
+
+
+@dp.message_handler(state=Form.waiting_for_contact_name)
+async def process_task_name(message: types.Message, state: FSMContext):
+    contact_name = message.text
+    if contact_name in contacts:
+        await message.answer("Введите задачу для этого контакта:")
+        await Form.waiting_for_task.set()
+        await state.update_data(contact_name=contact_name)  # запоминаем имя контакта
+    else:
+        await message.reply(f"Контакт '{contact_name}' не найден. Введите имя другого контакта:")
+
+
 @dp.message_handler(state=Form.waiting_for_task)
 async def process_task(message: types.Message, state: FSMContext):
     task = message.text
     data = await state.get_data()
-    colleague_name = data.get('colleague_name')
+    contact_name = data.get('contact_name')
 
-    if colleague_name not in schedule:
-        schedule[colleague_name] = []
-    
-    schedule[colleague_name].append(task)
+    if contact_name not in schedule:
+        schedule[contact_name] = []
+    schedule[contact_name].append(task)
+    await message.reply(f"Задача '{task}' добавлена для контакта '{contact_name}'!")
+    await state.finish()
+    await message.answer("Выберите пункт меню:", reply_markup=main_menu_keyboard())
 
-    await message.reply("Задача добавлена!")
-    await process_command(message, state)
 
-# Запуск бота
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
