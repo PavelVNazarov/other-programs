@@ -1,37 +1,28 @@
+import sqlite3
 from aiogram import Bot, Dispatcher, types
 from aiogram import executor
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-import sqlite3
-import asyncio
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 API_TOKEN = '7528963854:AAGLegRWedP3Wg4Q9ny07GKksOo01ebDo70'
 
+# Инициализация бота и диспетчера
 bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
 
-# Настройка базы данных
+# Инициализация базы данных
 def init_db():
     conn = sqlite3.connect('tasks.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS contacts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            contact_id INTEGER,
-            task TEXT NOT NULL,
-            date TEXT NOT NULL,
-            time TEXT NOT NULL,
-            FOREIGN KEY (contact_id) REFERENCES contacts (id)
-        )
-    ''')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS contacts
+                 (id INTEGER PRIMARY KEY, name TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS tasks
+                 (id INTEGER PRIMARY KEY, contact_id INTEGER, task TEXT, date TEXT, time TEXT,
+                 FOREIGN KEY(contact_id) REFERENCES contacts(id))''')
     conn.commit()
     conn.close()
 
@@ -39,114 +30,122 @@ def init_db():
 init_db()
 
 
+# Определение состояний
 class Form(StatesGroup):
-    add_contact = State()
-    add_task = State()
-    delete_task = State()
-    show_tasks = State()
+    waiting_for_contact = State()
+    waiting_for_task = State()
+    waiting_for_date = State()
+    waiting_for_time = State()
 
 
-# Команда /start
+# Обработка команды /start
 @dp.message_handler(commands=['start'])
-async def cmd_start(message: types.Message):
-    await message.answer("Привет! Я твой бот-ежедневник. Используй команды для управления задачами.")
+async def start_command(message: types.Message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(KeyboardButton("Список контактов"))
+    markup.add(KeyboardButton("Добавить контакт"), KeyboardButton("Удалить контакт"))
+    markup.add(KeyboardButton("Добавить задачу"), KeyboardButton("Удалить задачу"))
+    await message.answer("Привет! Я твой ежедневник. Чем могу помочь?", reply_markup=markup)
 
 
-# Команда для добавления контакта
-@dp.message_handler(commands=['add_contact'])
+# Функция для отображения списка контактов
+async def show_contacts(message: types.Message):
+    conn = sqlite3.connect('tasks.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM contacts")
+    contacts = c.fetchall()
+    await conn.close()
+
+    if contacts:
+        response = "Список контактов:\n" + '\n'.join([f"{contact[0]}: {contact[1]}" for contact in contacts])
+    else:
+        response = "Контакты не найдены."
+
+    await message.answer(response)
+
+
+# Функция для добавления контакта
+@dp.message_handler(lambda message: message.text == "Добавить контакт")
 async def add_contact(message: types.Message):
-    await Form.add_contact.set()
+    await Form.waiting_for_contact.set()
     await message.answer("Введите имя контакта:")
 
 
-@dp.message_handler(state=Form.add_contact)
-async def process_add_contact(message: types.Message, state: FSMContext):
-    name = message.text
+@dp.message_handler(state=Form.waiting_for_contact)
+async def process_contact(message: types.Message, state: FSMContext):
+    contact_name = message.text
     conn = sqlite3.connect('tasks.db')
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO contacts (name) VALUES (?)", (name,))
+    c = conn.cursor()
+    c.execute("INSERT INTO contacts (name) VALUES (?)", (contact_name,))
     conn.commit()
-    conn.close()
+    await conn.close()
     await state.finish()
-    await message.answer(f"Контакт {name} добавлен!")
+    await message.answer(f"Контакт '{contact_name}' добавлен!")
 
 
-# Команда для добавления задачи
-@dp.message_handler(commands=['add_task'])
+# Функция для удаления контакта
+@dp.message_handler(lambda message: message.text == "Удалить контакт")
+async def delete_contact(message: types.Message):
+    await show_contacts(message)
+    await Form.waiting_for_contact.set()
+    await message.answer("Введите ID контакта для удаления:")
+
+
+@dp.message_handler(state=Form.waiting_for_contact)
+async def process_delete_contact(message: types.Message, state: FSMContext):
+    contact_id = message.text
+    conn = sqlite3.connect('tasks.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+    conn.commit()
+    await conn.close()
+    await state.finish()
+    await message.answer(f"Контакт с ID '{contact_id}' удален!")
+
+
+# Функция для добавления задачи
+@dp.message_handler(lambda message: message.text == "Добавить задачу")
 async def add_task(message: types.Message):
-    await Form.add_task.set()
-    await message.answer("Введите задачу:")
+    await Form.waiting_for_task.set()
+    await message.answer("Введите текст задачи:")
 
 
-@dp.message_handler(state=Form.add_task)
-async def process_add_task(message: types.Message, state: FSMContext):
-    task_details = message.text.split(';')
-    if len(task_details) != 3:
-        await message.answer(
-            "Пожалуйста, укажите задачу в формате: 'задача;имя_контакта;дата_и_время' (где дата и время указываются в формате YYYY-MM-DD HH:MM)")
-        return
+@dp.message_handler(state=Form.waiting_for_task)
+async def process_task(message: types.Message, state: FSMContext):
+    task_text = message.text
+    await state.update_data(task=task_text)
+    await Form.waiting_for_date.set()
+    await message.answer("Введите дату задачи (в формате ГГГГ-ММ-ДД):")
 
-    task, contact_name, date_time = task_details
-    date, time = date_time.split()  # отдельные дата и время
+
+@dp.message_handler(state=Form.waiting_for_date)
+async def process_date(message: types.Message, state: FSMContext):
+    task_date = message.text
+    await state.update_data(date=task_date)
+    await Form.waiting_for_time.set()
+    await message.answer("Введите время задачи (в формате ЧЧ:ММ):")
+
+
+@dp.message_handler(state=Form.waiting_for_time)
+async def process_time(message: types.Message, state: FSMContext):
+    task_time = message.text
+    user_data = await state.get_data()
+    task_text = user_data['task']
+    task_date = user_data['date']
     conn = sqlite3.connect('tasks.db')
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT id FROM contacts WHERE name=?", (contact_name,))
-    contact_id = cursor.fetchone()
-
-    if contact_id:
-        cursor.execute("INSERT INTO tasks (contact_id, task, date, time) VALUES (?, ?, ?, ?)",
-                       (contact_id[0], task, date, time))
-        conn.commit()
-        await message.answer(f"Задача '{task}' добавлена для контакта '{contact_name}' на {date} в {time}.")
-    else:
-        await message.answer(f"Контакт {contact_name} не найден.")
-
-    conn.close()
-    await state.finish()
-
-
-# Команда для просмотра задач
-@dp.message_handler(commands=['show_tasks'])
-async def show_tasks(message: types.Message):
-    conn = sqlite3.connect('tasks.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT task, date, time FROM tasks")
-    tasks = cursor.fetchall()
-
-    if tasks:
-        response = "Список задач:\n"
-        for task, date, time in tasks:
-            response += f"- {task} (Дата: {date}, Время: {time})\n"
-    else:
-        response = "Задач нет."
-
-    await message.answer(response)
-    conn.close()
-
-
-# Команда для удаления задачи
-@dp.message_handler(commands=['delete_task'])
-async def delete_task(message: types.Message):
-    await Form.delete_task.set()
-    await message.answer("Введите ID задачи для удаления:")
-
-
-@dp.message_handler(state=Form.delete_task)
-async def process_delete_task(message: types.Message, state: FSMContext):
-    task_id = message.text
-    conn = sqlite3.connect('tasks.db')
-    cursor = conn.cursor()
-
-    cursor.execute("DELETE FROM tasks WHERE id=?", (task_id,))
-    if cursor.rowcount:
-        await message.answer(f"Задача с ID {task_id} удалена.")
-    else:
-        await message.answer(f"Задача с ID {task_id} не найдена.")
-
+    c = conn.cursor()
+    c.execute("INSERT INTO tasks (task, date, time) VALUES (?, ?, ?)", (task_text, task_date, task_time))
     conn.commit()
-    conn.close()
+    await conn.close()
     await state.finish()
+    await message.answer(f"Задача добавлена: {task_text} на {task_date} в {task_time}")
+
+
+# Обработка ошибок
+@dp.errors_handler()
+async def error_handler(update, exception):
+    print(f"Ошибка: {exception}")
+    return True  # Ошибка обработана
 
 
 if __name__ == '__main__':
