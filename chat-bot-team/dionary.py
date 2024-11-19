@@ -6,7 +6,8 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-API_TOKEN = 'YOUR_API_TOKEN_HERE'
+#API_TOKEN = 'YOUR_API_TOKEN_HERE'
+API_TOKEN = '7528963854:AAGLegRWedP3Wg4Q9ny07GKksOo01ebDo70'
 
 # Инициализация базы данных
 def init_db():
@@ -73,7 +74,7 @@ async def add_task(message: types.Message, state: FSMContext):
     await state.finish()  # Сбрасываем состояние
 
     # Здесь Вы можете добавить логику для добавления задачи в базу данных
-    await message.answer(f"Задача '{task_text}' добавлена.") 
+    await message.answer(f"Задача '{task_text}' добавлена.")
 
     # Возвращаемся в главное меню
     await show_main_menu(message.chat.id)
@@ -84,7 +85,7 @@ async def delete_task(message: types.Message, state: FSMContext):
     await state.finish()  # Сбрасываем состояние
 
     # Логика удаления задачи из базы данных по task_id
-    await message.answer(f"Задача с ID {task_id} удалена.") 
+    await message.answer(f"Задача с ID {task_id} удалена.")
 
     # Возвращаемся в главное меню
     await show_main_menu(message.chat.id)
