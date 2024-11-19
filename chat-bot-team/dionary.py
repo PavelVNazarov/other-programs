@@ -1,104 +1,113 @@
-import sqlite3
 from aiogram import Bot, Dispatcher, types
 from aiogram import executor
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+import sqlite3
 
-#API_TOKEN = 'YOUR_API_TOKEN_HERE'
-API_TOKEN = '7528963854:AAGLegRWedP3Wg4Q9ny07GKksOo01ebDo70'
+# Инициализируем бота и диспетчер
+bot = Bot(token='YOUR_BOT_TOKEN')
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
-# Инициализация базы данных
-def init_db():
-    conn = sqlite3.connect('tasks.db')
+# Инициализация БД
+def initiate_db():
+    # Открытие подключения к SQLite БД
+    conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY,
-            username TEXT
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS tasks (
-            task_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            task TEXT,
-            due_date TEXT,
-            due_time TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(user_id)
-        )
-    ''')
+    # Создание таблицы для задач
+    cursor.execute('''CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, task TEXT, date TEXT, time TEXT, contact TEXT)''')
     conn.commit()
     conn.close()
 
-# Инициализация бота
-bot = Bot(token=API_TOKEN)
-dp = Dispatcher(bot, storage=MemoryStorage())
-
+# Определение состояний для машины состояний
 class Form(StatesGroup):
-    adding_task = State()
-    deleting_task = State()
+    task_name = State()
+    task_date = State()
+    task_time = State()
+    contact_name = State()
 
-# Начальное приветствие
+# Обработчик команды /start
 @dp.message_handler(commands=['start'])
-async def cmd_start(message: types.Message):
-    await message.answer(f"Привет, {message.from_user.first_name}!")
-    await show_main_menu(message.chat.id)
+async def start_command(message: types.Message):
+    await message.reply("Привет! Я твой бот-помощник. Выберите действие:", reply_markup=start_menu())
 
-async def show_main_menu(chat_id):
+# Обработчик клавиатуры
+def start_menu():
     keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("Список задач", callback_data='show_tasks'))
+    keyboard.add(InlineKeyboardButton("Список контактов", callback_data='list_contacts'))
+    keyboard.add(InlineKeyboardButton("Добавить контакт", callback_data='add_contact'))
+    keyboard.add(InlineKeyboardButton("Удалить контакт", callback_data='delete_contact'))
     keyboard.add(InlineKeyboardButton("Добавить задачу", callback_data='add_task'))
-    keyboard.add(InlineKeyboardButton("Удалить задачу", callback_data='delete_task'))
-    keyboard.add(InlineKeyboardButton("Просмотр задач по дате", callback_data='view_by_date'))
-    await bot.send_message(chat_id, "Выберите действие:", reply_markup=keyboard)
+    keyboard.add(InlineKeyboardButton("Просмотр задач", callback_data='view_tasks'))
+    return keyboard
 
-# Обработка выборов в меню
-@dp.callback_query_handler(lambda c: c.data in ['show_tasks', 'add_task', 'delete_task', 'view_by_date'])
-async def process_menu_selection(callback_query: types.CallbackQuery):
-    if callback_query.data == 'show_tasks':
-        await show_tasks(callback_query.from_user.id)
-    elif callback_query.data == 'add_task':
-        await Form.adding_task.set()
-        await bot.send_message(callback_query.from_user.id, "Введите текст задачи:")
-    elif callback_query.data == 'delete_task':
-        await Form.deleting_task.set()
-        await bot.send_message(callback_query.from_user.id, "Введите ID задачи для удаления:")
-    elif callback_query.data == 'view_by_date':
-        await bot.send_message(callback_query.from_user.id, "Введите дату в формате ГГГГ-ММ-ДД:")
+@dp.callback_query_handler(lambda c: c.data == 'add_task')
+async def process_add_task(callback_query: types.CallbackQuery):
+    await Form.task_name.set()
+    await bot.send_message(callback_query.from_user.id, "Введите название задачи:")
 
-@dp.message_handler(state=Form.adding_task)
-async def add_task(message: types.Message, state: FSMContext):
-    task_text = message.text
-    await state.finish()  # Сбрасываем состояние
+@dp.message_handler(state=Form.task_name)
+async def process_task_name(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['task_name'] = message.text
+    await Form.next()
+    await message.reply("Введите дату задачи (YYYY-MM-DD):")
 
-    # Здесь Вы можете добавить логику для добавления задачи в базу данных
-    await message.answer(f"Задача '{task_text}' добавлена.")
+@dp.message_handler(state=Form.task_date)
+async def process_task_date(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['task_date'] = message.text
+    await Form.next()
+    await message.reply("Введите время задачи (HH:MM):")
 
-    # Возвращаемся в главное меню
-    await show_main_menu(message.chat.id)
+@dp.message_handler(state=Form.task_time)
+async def process_task_time(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['task_time'] = message.text
+        # Здесь можно добавить запись в БД
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO tasks (task, date, time) VALUES (?, ?, ?)", 
+                       (data['task_name'], data['task_date'], data['task_time']))
+        conn.commit()
+        conn.close()
+    await state.finish()
+    await message.reply("Задача добавлена!", reply_markup=start_menu())
 
-@dp.message_handler(state=Form.deleting_task)
-async def delete_task(message: types.Message, state: FSMContext):
-    task_id = message.text
-    await state.finish()  # Сбрасываем состояние
+@dp.callback_query_handler(lambda c: c.data == 'view_tasks')
+async def process_view_tasks(callback_query: types.CallbackQuery):
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tasks")
+    tasks = cursor.fetchall()
+    conn.close()
 
-    # Логика удаления задачи из базы данных по task_id
-    await message.answer(f"Задача с ID {task_id} удалена.")
+    if tasks:
+        tasks_message = "\n".join([f"{task[1]} (Дата: {task[2]}, Время: {task[3]})" for task in tasks])
+        await bot.send_message(callback_query.from_user.id, f"Ваши задачи:\n{tasks_message}")
+    else:
+        await bot.send_message(callback_query.from_user.id, "Нет задач.", reply_markup=start_menu())
 
-    # Возвращаемся в главное меню
-    await show_main_menu(message.chat.id)
-
-async def show_tasks(user_id):
-    # Здесь Вы можете добавить логику для извлечения задач из базы данных
-    await bot.send_message(user_id, "Здесь будут Ваши задачи.")
-
-# Обработка ошибок
-@dp.message_handler()
-async def handle_errors(message: types.Message):
-    await message.answer("Пожалуйста, введите правильную команду.")
-
+# Основной цикл
 if __name__ == '__main__':
-    init_db()
+    initiate_db()
     executor.start_polling(dp, skip_updates=True)
+
+
+
+# Пояснения по строкам кода:
+# Импорт библиотек: Импортируются необходимые библиотеки для работы с Telegram Bot API, состояния (FSM), а также для работы с SQLite.
+# Инициализация бота: Создается экземпляр Bot с переданным токеном, создается диспетчер для управления состояниями.
+# initiate_db(): Функция для инициализации базы данных. Создаёт таблицу tasks, если она не существует.
+# Определение состояний: Определяются состояния машины состояний с помощью StatesGroup для ввода названия задачи, даты и времени.
+# Обработчик команды /start: Приветствие пользователя и вывод клавиатуры с возможными действиями.
+# Функция start_menu(): Создаем inline-клавиатуру с кнопками для навигации по функциям бота.
+# Обработчик добавления задачи: Устанавливает состояние для ввода названия задачи.
+# Обработчик ввода названия задачи: Сохраняем название задачи и переходим к вводу даты.
+# Обработчик ввода даты: Сохраняем дату и переходим к вводу времени.
+# Обработчик ввода времени: Сохраняем время задачи, добавляем данные в базу и завершаем состояние.
+# Обработчик просмотра задач: Извлекаем все задачи из БД и отправляем пользователю.
+# Запуск бота: Инициализация базы данных и запуск бота.
+    
