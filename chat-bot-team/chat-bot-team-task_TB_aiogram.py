@@ -9,8 +9,6 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 #API_TOKEN = 'YOUR_API_TOKEN'
 API_TOKEN = '7528963854:AAGLegRWedP3Wg4Q9ny07GKksOo01ebDo70'
 logging.basicConfig(level=logging.INFO)
-
-# Инициализация бота и диспетчера
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
@@ -51,9 +49,8 @@ async def show_contacts(message):
         response = "Список контактов:\n" + "\n".join(contacts.keys())
     else:
         response = "Контакты отсутствуют."
-    await message.answer(response)
 
-    # Инлайн-кнопки для добавления контакта и обратно в главное меню
+    await message.answer(response)
     keyboard = InlineKeyboardMarkup(row_width=2)
     keyboard.add(InlineKeyboardButton("Добавить контакт", callback_data='add_contact'),
                  InlineKeyboardButton("На главную", callback_data='main_menu'))
@@ -69,10 +66,15 @@ async def add_contact(callback: types.CallbackQuery):
 @dp.message_handler(state=Form.waiting_for_contact_name)
 async def process_contact_name(message: types.Message, state: FSMContext):
     contact_name = message.text
-    contacts[contact_name] = []  # добавляем контакт в список контактов
+    contacts[contact_name] = []
     await message.reply(f"Контакт '{contact_name}' добавлен!")
     await state.finish()
     await message.answer("Выберите пункт меню:", reply_markup=main_menu_keyboard())
+
+
+@dp.callback_query_handler(lambda c: c.data == 'main_menu', state=Form.main_menu)
+async def return_to_main_menu(callback: types.CallbackQuery):
+    await callback.message.answer("Выберите пункт меню:", reply_markup=main_menu_keyboard())
 
 
 async def show_today_tasks(message):
@@ -81,10 +83,9 @@ async def show_today_tasks(message):
         for contact, tasks in schedule.items():
             response += f"{contact}:\n" + "\n".join(tasks) + "\n"
     else:
-        response = "Задач на сегодня нет."
-    await message.answer(response)
+        response += "Задач на сегодня нет."
 
-    # Инлайн-кнопки для добавления задачи и обратно в главное меню
+    await message.answer(response)
     keyboard = InlineKeyboardMarkup(row_width=2)
     keyboard.add(InlineKeyboardButton("Добавить задачу", callback_data='add_task'),
                  InlineKeyboardButton("На главную", callback_data='main_menu'))
@@ -103,7 +104,7 @@ async def process_task_name(message: types.Message, state: FSMContext):
     if contact_name in contacts:
         await message.answer("Введите задачу для этого контакта:")
         await Form.waiting_for_task.set()
-        await state.update_data(contact_name=contact_name)  # запоминаем имя контакта
+        await state.update_data(contact_name=contact_name)
     else:
         await message.reply(f"Контакт '{contact_name}' не найден. Введите имя другого контакта:")
 
@@ -117,10 +118,12 @@ async def process_task(message: types.Message, state: FSMContext):
     if contact_name not in schedule:
         schedule[contact_name] = []
     schedule[contact_name].append(task)
-    await message.reply(f"Задача '{task}' добавлена для контакта '{contact_name}'!")
+    await message.reply(f"Задача '{task}' добавлена для контакта '{contact_name}'.")
     await state.finish()
     await message.answer("Выберите пункт меню:", reply_markup=main_menu_keyboard())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    from aiogram import executor
+
     executor.start_polling(dp, skip_updates=True)
