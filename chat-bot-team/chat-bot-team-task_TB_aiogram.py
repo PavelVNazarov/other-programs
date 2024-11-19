@@ -72,8 +72,9 @@ async def process_contact_name(message: types.Message, state: FSMContext):
     await message.answer("Выберите пункт меню:", reply_markup=main_menu_keyboard())
 
 
-@dp.callback_query_handler(lambda c: c.data == 'main_menu', state=Form.main_menu)
-async def return_to_main_menu(callback: types.CallbackQuery):
+@dp.callback_query_handler(lambda c: c.data == 'main_menu', state="*") # Включаем все состояния
+async def main_menu(callback: types.CallbackQuery, state: FSMContext):
+    await state.finish()  # Завершаем текущее состояние
     await callback.message.answer("Выберите пункт меню:", reply_markup=main_menu_keyboard())
 
 
@@ -117,9 +118,10 @@ async def process_task(message: types.Message, state: FSMContext):
 
     if contact_name not in schedule:
         schedule[contact_name] = []
-    schedule[contact_name].append(task)
-    await message.reply(f"Задача '{task}' добавлена для контакта '{contact_name}'.")
-    await state.finish()
+
+    schedule[contact_name].append(task)  # Добавляем задачу в список
+    await message.reply(f"Задача '{task}' добавлена для контакта '{contact_name}'!")
+    await state.finish()  # Завершаем состояние
     await message.answer("Выберите пункт меню:", reply_markup=main_menu_keyboard())
 
 
