@@ -1,229 +1,151 @@
-import logging
+import sqlite3
 from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher import filters
-from aiogram.dispatcher import FSMContext
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.utils import executor
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher import filters
-from aiogram import Dispatcher, Bot
-from aiogram import types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-
-API_TOKEN = 'YOUR_API_TOKEN_HERE'
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-
-# Initialize bot and dispatcher
-bot = Bot(token=API_TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
-
-schedule = {}
-
-class Form:
-    name = 'name'
-    colleague_name = 'colleague_name'
-    task = 'task'
-
-@dp.message_handler(commands=['start'])
-async def welcome(message: types.Message):
-    await message.answer("Как тебя зовут?")
-    await Form.name.set()
-
-@dp.message_handler(state=Form.name)
-async def process_name(message: types.Message, state: FSMContext):
-    name = message.text
-    await state.update_data(name=name)
-    
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(types.InlineKeyboardButton(text='Вывести все задачи', callback_data='list_tasks'))
-    keyboard.add(types.InlineKeyboardButton(text='Вывести задачи по коллеге', callback_data='list_colleague_tasks'))
-    keyboard.add(types.InlineKeyboardButton(text='Добавить новую задачу', callback_data='add_task'))
-    keyboard.add(types.InlineKeyboardButton(text='Добавить нового коллегу', callback_data='add_colleague'))
-    keyboard.add(types.InlineKeyboardButton(text='Завершить работу', callback_data='finish'))
-
-    await message.answer(f"Привет, {name}! Я твой бот-помощник.", reply_markup=keyboard)
-    await state.finish()
-
-@dp.callback_query_handler(lambda c: c.data == 'list_tasks')
-async def list_tasks(callback_query: types.CallbackQuery):
-    tasks = "\n".join([f"{name}: {tasks}" for name, tasks in schedule.items()])
-    await bot.send_message(callback_query.from_user.id, f"Список дел на сегодня:\n{tasks or 'Нет задач'}")
-
-@dp.callback_query_handler(lambda c: c.data == 'list_colleague_tasks')
-async def list_colleague_tasks(callback_query: types.CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, "Введите имя коллеги:")
-    await Form.colleague_name.set()
-
-@dp.message_handler(state=Form.colleague_name)
-async def process_colleague_name(message: types.Message, state: FSMContext):
-    colleague_name = message.text
-    tasks = schedule.get(colleague_name)
-    await message.answer(f"Список дел по коллеге {colleague_name}:\n{tasks or 'Нет задач'}")
-    await state.finish()
-
-@dp.callback_query_handler(lambda c: c.data == 'add_task')
-async def add_task(callback_query: types.CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, "Введите имя коллеги:")
-    await Form.colleague_name.set()
-
-@dp.message_handler(state=Form.colleague_name)
-async def process_add_task_colleague_name(message: types.Message, state: FSMContext):
-    colleague_name = message.text
-    data = await state.get_data()
-    name = data.get('name')
-
-    await state.update_data(colleague_name=colleague_name)
-    await bot.send_message(message.from_user.id, "Введите задачу:")
-    await Form.task.set()
-
-@dp.message_handler(state=Form.task)
-async def process_task(message: types.Message, state: FSMContext):
-    task = message.text
-    data = await state.get_data()
-    colleague_name = data.get('colleague_name')
-
-    if colleague_name not in schedule:
-        schedule[colleague_name] = []
-    
-    schedule[colleague_name].append(task)
-
-    await message.answer(f"Задача добавлена для {colleague_name}.")
-    await state.finish()
-
-@dp.callback_query_handler(lambda c: c.data == 'add_colleague')
-async def add_colleague(callback_query: types.CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, "Введите имя нового коллеги:")
-    await Form.colleague_name.set()
-
-@dp.message_handler(state=Form.colleague_name)
-async def process_add_colleague(message: types.Message, state: FSMContext):
-    colleague_name = message.text
-    schedule[colleague_name] = []  # Добавление нового коллеги с пустым списком задач
-
-    await message.answer(f"Коллега {colleague_name} добавлен.")
-    await state.finish()
-
-@dp.callback_query_handler(lambda c: c.data == 'finish')
-async def finish(callback_query: types.CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, "Завершение работы.")
-
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
-
-
-
-
-import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram import executor
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.utils import executor
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-API_TOKEN = 'ваш_токен_здесь'  # Замените на Ваш токен
 API_TOKEN = '7528963854:AAGLegRWedP3Wg4Q9ny07GKksOo01ebDo70'
-logging.basicConfig(level=logging.INFO)
 
+# Инициализация бота и диспетчера
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
-schedule = {}
+
+# Инициализация базы данных
+def init_db():
+    conn = sqlite3.connect('tasks.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS contacts
+                 (id INTEGER PRIMARY KEY, name TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS tasks
+                 (id INTEGER PRIMARY KEY, contact_id INTEGER, task TEXT, date TEXT, time TEXT,
+                 FOREIGN KEY(contact_id) REFERENCES contacts(id))''')
+    conn.commit()
+    conn.close()
 
 
+init_db()
+
+
+# Определение состояний
 class Form(StatesGroup):
-    name = State()
-    colleague_name = State()
-    task = State()
+    waiting_for_contact = State()
+    waiting_for_task = State()
+    waiting_for_date = State()
+    waiting_for_time = State()
 
 
+# Обработка команды /start
 @dp.message_handler(commands=['start'])
-async def welcome(message: types.Message):
-    await message.answer("Как тебя зовут?")
-    await Form.name.set()
+async def start_command(message: types.Message):
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(KeyboardButton("Список контактов"))
+    markup.add(KeyboardButton("Добавить контакт"), KeyboardButton("Удалить контакт"))
+    markup.add(KeyboardButton("Добавить задачу"), KeyboardButton("Удалить задачу"))
+    await message.answer("Привет! Я твой ежедневник. Чем могу помочь?", reply_markup=markup)
 
 
-@dp.message_handler(state=Form.name)
-async def process_name(message: types.Message, state: FSMContext):
-    name = message.text
-    await state.update_data(name=name)
+# Функция для отображения списка контактов
+async def show_contacts(message: types.Message):
+    conn = sqlite3.connect('tasks.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM contacts")
+    contacts = c.fetchall()
+    await conn.close()
 
-    keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(types.InlineKeyboardButton(text='Вывести все задачи', callback_data='list_tasks'))
-    keyboard.add(types.InlineKeyboardButton(text='Вывести задачи по коллеге', callback_data='list_colleague_tasks'))
-    keyboard.add(types.InlineKeyboardButton(text='Добавить новую задачу', callback_data='add_task'))
-    keyboard.add(types.InlineKeyboardButton(text='Добавить нового коллегу', callback_data='add_colleague'))
-    keyboard.add(types.InlineKeyboardButton(text='Завершить работу', callback_data='finish'))
+    if contacts:
+        response = "Список контактов:\n" + '\n'.join([f"{contact[0]}: {contact[1]}" for contact in contacts])
+    else:
+        response = "Контакты не найдены."
 
-    await message.answer(f"Привет, {name}! Я твой бот-помощник.", reply_markup=keyboard)
+    await message.answer(response)
+
+
+# Функция для добавления контакта
+@dp.message_handler(lambda message: message.text == "Добавить контакт")
+async def add_contact(message: types.Message):
+    await Form.waiting_for_contact.set()
+    await message.answer("Введите имя контакта:")
+
+
+@dp.message_handler(state=Form.waiting_for_contact)
+async def process_contact(message: types.Message, state: FSMContext):
+    contact_name = message.text
+    conn = sqlite3.connect('tasks.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO contacts (name) VALUES (?)", (contact_name,))
+    conn.commit()
+    await conn.close()
     await state.finish()
+    await message.answer(f"Контакт '{contact_name}' добавлен!")
 
 
-@dp.callback_query_handler(lambda c: c.data == 'list_tasks')
-async def list_tasks(callback_query: types.CallbackQuery):
-    tasks = "\n".join([f"{name}: {', '.join(tasks)}" for name, tasks in schedule.items()])
-    await bot.send_message(callback_query.from_user.id, f"Список дел на сегодня:\n{tasks or 'Нет задач'}")
+# Функция для удаления контакта
+@dp.message_handler(lambda message: message.text == "Удалить контакт")
+async def delete_contact(message: types.Message):
+    await show_contacts(message)
+    await Form.waiting_for_contact.set()
+    await message.answer("Введите ID контакта для удаления:")
 
 
-@dp.callback_query_handler(lambda c: c.data == 'list_colleague_tasks')
-async def list_colleague_tasks(callback_query: types.CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, "Введите имя коллеги:")
-    await Form.colleague_name.set()
-
-
-@dp.message_handler(state=Form.colleague_name)
-async def process_colleague_name(message: types.Message, state: FSMContext):
-    colleague_name = message.text
-    tasks = schedule.get(colleague_name, [])
-    await message.answer(f"Список дел по коллеге {colleague_name}:\n{tasks or 'Нет задач'}")
+@dp.message_handler(state=Form.waiting_for_contact)
+async def process_delete_contact(message: types.Message, state: FSMContext):
+    contact_id = message.text
+    conn = sqlite3.connect('tasks.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+    conn.commit()
+    await conn.close()
     await state.finish()
+    await message.answer(f"Контакт с ID '{contact_id}' удален!")
 
 
-@dp.callback_query_handler(lambda c: c.data == 'add_task')
-async def add_task(callback_query: types.CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, "Введите имя коллеги:")
-    await Form.colleague_name.set()
+# Функция для добавления задачи
+@dp.message_handler(lambda message: message.text == "Добавить задачу")
+async def add_task(message: types.Message):
+    await Form.waiting_for_task.set()
+    await message.answer("Введите текст задачи:")
 
 
-@dp.message_handler(state=Form.colleague_name)
-async def process_add_task_colleague_name(message: types.Message, state: FSMContext):
-    colleague_name = message.text
-    data = await state.get_data()
-    name = data.get('name')
-    await state.update_data(colleague_name=colleague_name)
-    await bot.send_message(message.from_user.id, "Введите задачу:")
-    await Form.task.set()
-
-
-@dp.message_handler(state=Form.task)
+@dp.message_handler(state=Form.waiting_for_task)
 async def process_task(message: types.Message, state: FSMContext):
-    task = message.text
-    data = await state.get_data()
-    colleague_name = data.get('colleague_name')
-    if colleague_name not in schedule:
-        schedule[colleague_name] = []
-    schedule[colleague_name].append(task)
+    task_text = message.text
+    await state.update_data(task=task_text)
+    await Form.waiting_for_date.set()
+    await message.answer("Введите дату задачи (в формате ГГГГ-ММ-ДД):")
 
-    await message.answer(f"Задача добавлена для {colleague_name}.")
+
+@dp.message_handler(state=Form.waiting_for_date)
+async def process_date(message: types.Message, state: FSMContext):
+    task_date = message.text
+    await state.update_data(date=task_date)
+    await Form.waiting_for_time.set()
+    await message.answer("Введите время задачи (в формате ЧЧ:ММ):")
+
+
+@dp.message_handler(state=Form.waiting_for_time)
+async def process_time(message: types.Message, state: FSMContext):
+    task_time = message.text
+    user_data = await state.get_data()
+    task_text = user_data['task']
+    task_date = user_data['date']
+    conn = sqlite3.connect('tasks.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO tasks (task, date, time) VALUES (?, ?, ?)", (task_text, task_date, task_time))
+    conn.commit()
+    await conn.close()
     await state.finish()
+    await message.answer(f"Задача добавлена: {task_text} на {task_date} в {task_time}")
 
 
-@dp.callback_query_handler(lambda c: c.data == 'add_colleague')
-async def add_colleague(callback_query: types.CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, "Введите имя нового коллеги:")
-    await Form.colleague_name.set()
-
-
-@dp.callback_query_handler(lambda c: c.data == 'finish')
-async def finish(callback_query: types.CallbackQuery):
-    await bot.send_message(callback_query.from_user.id, "Работа завершена. До свидания!")
-    await dp.storage.finish(callback_query.from_user.id)
+# Обработка ошибок
+@dp.errors_handler()
+async def error_handler(update, exception):
+    print(f"Ошибка: {exception}")
+    return True  # Ошибка обработана
 
 
 if __name__ == '__main__':
