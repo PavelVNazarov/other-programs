@@ -1,0 +1,19 @@
+<!-- tasks/templates/tasks/colleague_tasks.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Задачи для {{ colleague_name }}</title>
+</head>
+<body>
+    <h1>Задачи для {{ colleague_name }}</h1>
+    <ul>
+        {% for task in tasks %}
+            <li>{{ task.task_desc }}</li>
+        {% empty %}
+            <li>Нет задач.</li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'home' %}">Назад</a>
+</body>
+</html>

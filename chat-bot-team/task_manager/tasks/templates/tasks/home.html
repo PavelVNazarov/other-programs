@@ -1,0 +1,25 @@
+<!-- tasks/templates/tasks/home.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Task Manager</title>
+</head>
+<body>
+    <h1>Задачи</h1>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="colleague_name" placeholder="Имя коллеги">
+        <input type="text" name="task_desc" placeholder="Описание задачи">
+        <button type="submit">Добавить задачу</button>
+    </form>
+    <h2>Список задач:</h2>
+    <ul>
+        {% for task in tasks %}
+            <li>
+                <a href="{% url 'colleague_tasks' task.colleague_name %}">{{ task.colleague_name }}</a>: {{ task.task_desc }}
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
